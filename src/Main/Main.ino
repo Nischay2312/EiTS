@@ -9,7 +9,7 @@
 // // https://www.instructables.com/Mini-Retro-TV/ 
 // /////////////////////////////////////////////////////////////////
 
-#define FPS 30
+#define FPS 24
 #define MJPEG_BUFFER_SIZE (128 * 160 * 2 / 8)
 #define AUDIOASSIGNCORE 1
 #define DECODEASSIGNCORE 0
@@ -19,7 +19,7 @@
 #include <WiFi.h>
 #include <FS.h>
 #include <SD.h>
-#include <Preferences.h>
+//#include <Preferences.h>
 
 
 #include "version.h"
@@ -81,7 +81,7 @@ void setup() {
     return;
   }
 
-  preferences.begin(APP_NAME, false);
+  // preferences.begin(APP_NAME, false);
   video_idx = 1;//preferences.getUInt(K_VIDEO_INDEX, 1);
   Serial.printf("videoIndex: %d\n", video_idx);
 
@@ -91,8 +91,14 @@ void setup() {
   gfx->printf("CH %d", video_idx);
   delay(1000);
 
-  while(playVideoWithAudio(video_idx)){
-    video_idx++;
+  while(1){
+    bool ret = playVideoWithAudio(video_idx);
+    if(ret){
+      video_idx = video_idx + 1;
+    }
+    else{
+      break;
+    }
   }
 
   Serial.println("Restarting");
@@ -106,7 +112,7 @@ void loop() {
 bool playVideoWithAudio(int channel) {
 
   char aFilePath[40];
-  sprintf(aFilePath, "%s%d%s", BASE_PATH, channel, AAC_FILENAME);
+  sprintf(aFilePath, "%s%d%s", BASE_PATH, channel, MP3_FILENAME);
 
   File aFile = SD.open(aFilePath);
   if (!aFile || aFile.isDirectory()) {
@@ -138,6 +144,13 @@ bool playVideoWithAudio(int channel) {
     gfx->printf("Audio player task start failed: %d\n", ret);
   }
 
+  // while(taskState == 0){
+
+  // }
+  // while(taskState != 0){
+
+  // }
+  // taskState = 0;
   Serial.println("Start play video");
 
   start_ms = millis();
@@ -168,6 +181,44 @@ bool playVideoWithAudio(int channel) {
   }
   int time_used = millis() - start_ms;
   int total_frames = next_frame - 1;
+  
+  if (_decodeTask) {
+      vTaskDelete(_decodeTask);
+      _decodeTask = NULL;
+      Serial.println("Force Kill Decode Task");
+  }
+
+  if (_draw_task) {
+      vTaskDelete(_draw_task);
+      _draw_task = NULL;
+      Serial.println("Force Kill Draw Task");
+  }
+
+  for (int i = 0; i < NUMBER_OF_DECODE_BUFFER; ++i) {
+    if (_mjpegBufs[i].buf) {
+        free(_mjpegBufs[i].buf);
+        _mjpegBufs[i].buf = NULL;
+    }
+  }
+
+  if (_read_buf) {
+    free(_read_buf);
+    _read_buf = NULL;
+  }
+
+  for (int i = 0; i < NUMBER_OF_DRAW_BUFFER; i++) {
+    if (jpegdraws[i].pPixels) {
+        heap_caps_free(jpegdraws[i].pPixels);
+        jpegdraws[i].pPixels = NULL;
+    }
+  }
+
+  _inputindex = 0;
+  _mjpeg_buf_offset = 0;
+  _mBufIdx = 0;
+  next_frame = 0;
+  skipped_frames = 0;
+
   Serial.println("AV end");
   vFile.close();
   aFile.close();
@@ -185,7 +236,7 @@ void videoController(int next) {
     video_idx = 1;
   }
   Serial.printf("video_idx : %d\n", video_idx);
-  preferences.putUInt(K_VIDEO_INDEX, video_idx);
-  preferences.end();
+  //preferences.putUInt(K_VIDEO_INDEX, video_idx);
+  //preferences.end();
   esp_restart();
 }

@@ -15,5 +15,6 @@
 #define K_VIDEO_INDEX "video_index"
 #define BASE_PATH "/Videos/"
 #define AAC_FILENAME "/test.aac"
+#define MP3_FILENAME "/test.mp3"
 #define MJPEG_FILENAME "/test.mjpeg"
 #define VIDEO_COUNT 20

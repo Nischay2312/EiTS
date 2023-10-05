@@ -5,6 +5,8 @@
 
 #define GAIN_LEVEL 0.8
 
+volatile uint8_t taskState = 0;
+
 static unsigned long total_read_audio_ms = 0;
 static unsigned long total_decode_audio_ms = 0;
 static unsigned long total_play_audio_ms = 0;
@@ -121,6 +123,7 @@ static void aac_player_task(void *pvParam)
 static libhelix::MP3DecoderHelix _mp3(mp3AudioDataCallback);
 static void mp3_player_task(void *pvParam)
 {
+  taskState = 1;
   Stream *input = (Stream *)pvParam;
 
   int r, w;
@@ -140,7 +143,8 @@ static void mp3_player_task(void *pvParam)
     ms = millis();
   }
   log_i("MP3 stop.");
-
+  taskState = 0;
+  Serial.println("MP3 Finished");
   vTaskDelete(NULL);
 }
 

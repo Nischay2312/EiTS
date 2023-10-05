@@ -99,6 +99,7 @@ static void decode_task(void *arg)
   }
   vQueueDelete(p->xqh);
   log_i("decode_task end.");
+  Serial.println("Decode task End");
   vTaskDelete(NULL);
 }
 
@@ -115,6 +116,7 @@ static void draw_task(void *arg)
   }
   vQueueDelete(p->xqh);
   log_i("draw_task end.");
+  Serial.println("draw task End");
   vTaskDelete(NULL);
 }
 
