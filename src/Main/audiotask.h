@@ -1,3 +1,16 @@
+// /////////////////////////////////////////////////////////////////
+// /*
+//   Esp infoTainment System (EiTS)
+//   For More Information: https://github.com/Nischay2312/EiTS
+//   Created by Nischay J., 2023
+// */
+// /////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////
+// /*
+//   audiotask.h
+//   Header file that contains all the Audio related functions. Use I2S with DMA to play the sound and use Helix MP3 and AAC decoders to decode the audio.
+// */
+// /////////////////////////////////////////////////////////////////
 #include "driver/i2s.h"
 
 #include "AACDecoderHelix.h"
@@ -141,6 +154,7 @@ static void mp3_player_task(void *pvParam)
     }
     total_decode_audio_ms += millis() - ms;
     ms = millis();
+    vTaskDelay(2 / portTICK_PERIOD_MS);
   }
   log_i("MP3 stop.");
   taskState = 0;

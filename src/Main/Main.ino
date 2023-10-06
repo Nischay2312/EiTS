@@ -38,6 +38,9 @@ Arduino_GFX *gfx = new Arduino_ST7735(bus, RST /* RST */, 1 /* rotation */, fals
 #include "decodetask.h"
 void playVideo(File vFile, File afile);
 
+/* Batter Management */
+#include "batterytask.h"
+
 /* Variables */
 static int next_frame = 0;
 static int skipped_frames = 0;
@@ -83,6 +86,18 @@ void setup() {
     return;
   }
 
+}
+
+void loop() {
+  //start the battery task
+  batteryData Bdata;
+  int ret = startBatteryTask(AUDIOASSIGNCORE);
+
+  if(ret != 1){
+    Serial.println("Battery Task Failed");
+    gfx->println("Battery Task Failed");
+  }
+
   video_idx = 1;
   Serial.printf("videoIndex: %d\n", video_idx);
 
@@ -90,24 +105,37 @@ void setup() {
   gfx->setTextColor(GREEN);
   gfx->setTextSize(6, 6, 0);
   gfx->printf("CH %d", video_idx);
-  delay(1000);
+  vTaskDelay(1000 / portTICK_PERIOD_MS);
 
   while(1){
-    bool ret = playVideoWithAudio(video_idx);
+    bool ret = false;//playVideoWithAudio(video_idx);
     if(ret){
       video_idx = video_idx + 1;
     }
     else{
-      break;
+      video_idx = 1;
     }
+    //check if there is something in the battery queue
+
+    if(xQueueReceive(batteryQueue, &Bdata, 0)){
+      //print the battery data
+      //first make the background black
+      gfx->fillRect(0, 0, 160, 128, BLACK);
+      gfx->setCursor(0, 0);
+      gfx->setTextColor(WHITE);
+      //smaller text size
+      gfx->setTextSize(2, 2, 0);
+      gfx->printf("Battery: %.2f%%/n", Bdata.cellPercentage);
+      gfx->printf("Voltage: %.2f V/n", Bdata.cellVoltage);
+      gfx->printf("Battery rate: %.4f\n", Bdata.chargeRate);
+
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
+
+    } 
   }
 
   Serial.println("Restarting");
   esp_restart();
-
-}
-
-void loop() {
 }
 
 bool playVideoWithAudio(int channel) {

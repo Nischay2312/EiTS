@@ -1,3 +1,16 @@
+// /////////////////////////////////////////////////////////////////
+// /*
+//   Esp infoTainment System (EiTS)
+//   For More Information: https://github.com/Nischay2312/EiTS
+//   Created by Nischay J., 2023
+// */
+// /////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////
+// /*
+//   decodetask.h
+//   Header file that contains all the MJPEG decoding related functions. Use JPEGDEC library to decode the MJPEG video.
+// */
+// /////////////////////////////////////////////////////////////////
 #define READ_BUFFER_SIZE 1024
 #define MAXOUTPUTSIZE (MAX_BUFFERED_PIXELS / 16 / 16)
 // #define MAXOUTPUTSIZE (480 / 4 / 16)
