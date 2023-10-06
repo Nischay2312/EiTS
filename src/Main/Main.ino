@@ -85,7 +85,8 @@ void setup() {
     gfx->println("ERROR: File system mount failed!");
     return;
   }
-
+  delay(2000);
+  Serial.println("System Start");
 }
 
 void loop() {
@@ -108,46 +109,33 @@ void loop() {
   vTaskDelay(1000 / portTICK_PERIOD_MS);
 
   while(1){
-    bool ret = false;//playVideoWithAudio(video_idx);
-    if(ret){
-      video_idx = video_idx + 1;
-    }
-    else{
-      video_idx = 1;
-    }
+    // bool ret = false;//playVideoWithAudio(video_idx);
+    // if(ret){
+    //   video_idx = video_idx + 1;
+    // }
+    // else{
+    //   video_idx = 1;
+    // }
+    
     //check if there is something in the battery queue
-    //Record the battery data
-      Bdata.cellPercentage = max17048.cellPercent();
-      Bdata.cellVoltage = max17048.cellVoltage();
-      Bdata.chargeRate = max17048.chargeRate();
+    if(xQueueReceive(batteryQueue, &Bdata, 0)){
+      //print the battery data
+      //first make the background black
       gfx->fillRect(0, 0, 160, 128, BLACK);
       gfx->setCursor(0, 0);
       gfx->setTextColor(WHITE);
       //smaller text size
-      gfx->setTextSize(2, 2, 0);
-      gfx->printf("Battery: %.2f%%/n", Bdata.cellPercentage);
-      gfx->printf("Voltage: %.2f V/n", Bdata.cellVoltage);
+      gfx->setTextSize(1, 1, 0);
+      gfx->printf("Battery: %.2f%%\n", Bdata.cellPercentage);
+      gfx->printf("Voltage: %.2f V\n", Bdata.cellVoltage);
       gfx->printf("Battery rate: %.4f\n", Bdata.chargeRate);
-      Serial.printf("Battery: %.2f%%/n", Bdata.cellPercentage);
-      Serial.printf("Voltage: %.2f V/n", Bdata.cellVoltage);
+      Serial.printf("Battery: %.2f%%\n", Bdata.cellPercentage);
+      Serial.printf("Voltage: %.2f V\n", Bdata.cellVoltage);
       Serial.printf("Battery rate: %.4f\n", Bdata.chargeRate);
-      delay(5000);
 
-    // if(xQueueReceive(batteryQueue, &Bdata, 0)){
-    //   //print the battery data
-    //   //first make the background black
-    //   gfx->fillRect(0, 0, 160, 128, BLACK);
-    //   gfx->setCursor(0, 0);
-    //   gfx->setTextColor(WHITE);
-    //   //smaller text size
-    //   gfx->setTextSize(2, 2, 0);
-    //   gfx->printf("Battery: %.2f%%/n", Bdata.cellPercentage);
-    //   gfx->printf("Voltage: %.2f V/n", Bdata.cellVoltage);
-    //   gfx->printf("Battery rate: %.4f\n", Bdata.chargeRate);
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
 
-    //   vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-    // } 
+    } 
   }
 
   Serial.println("Restarting");

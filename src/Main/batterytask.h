@@ -29,7 +29,18 @@ static xQueueHandle batteryQueue;
 static void batteryTask(void *arg)
 {
     Serial.println("Battery task start!");
-    batteryData *data = (batteryData *)arg;
+
+    if(!max17048.begin()){
+      delay(1000);
+      Serial.println("MAX17048 not found!");
+      vTaskDelete(NULL);
+    }
+
+    Serial.print(F("Found MAX17048"));
+    Serial.print(F(" with Chip ID: 0x")); 
+    Serial.println(max17048.getChipID(), HEX);
+
+    batteryData data;
     //max17048.setActivityThreshold(0.15);
     //max17048.setHibernationThreshold(5);
 
@@ -43,16 +54,19 @@ static void batteryTask(void *arg)
     while (1)
     {
         //Record the battery data
-        data->cellPercentage = max17048.cellPercent();
-        data->cellVoltage = max17048.cellVoltage();
-        data->chargeRate = max17048.chargeRate();
+        data.cellPercentage = max17048.cellPercent();
+        data.cellVoltage = max17048.cellVoltage();
+        data.chargeRate = max17048.chargeRate();
         //send it over through the queue
         if(BATTERY_QUEUE_SIZE == 1){
-            xQueueOverwrite(batteryQueue, data);
+            xQueueOverwrite(batteryQueue, &data);
         }
         else{
-            xQueueSend(batteryQueue, data, 0);
+            xQueueSend(batteryQueue, &data, 0);
         }
+        // Serial.printf("Battery: %.2f%%\n", data.cellPercentage);
+        // Serial.printf("Voltage: %.2f V\n", data.cellVoltage);
+        // Serial.printf("Battery rate: %.4f\n", data.chargeRate);
         //sleep for 5 seconds
         vTaskDelay(5000 / portTICK_PERIOD_MS);
     }
@@ -60,29 +74,20 @@ static void batteryTask(void *arg)
 
 int startBatteryTask(BaseType_t assignedCore)
 {
-    if(!max17048.begin()){
-        delay(1000);
-        Serial.println("MAX17048 not found!");
-        return -1;
-    }
-    Serial.print(F("Found MAX17048"));
-    Serial.print(F(" with Chip ID: 0x")); 
-    Serial.println(max17048.getChipID(), HEX);
-    
-    // BaseType_t ret = xTaskCreatePinnedToCore(
-    //   (TaskFunction_t)batteryTask,
-    //   (const char *const)"Battery Task",
-    //   (const uint32_t)2000,
-    //   (void *const) NULL,
-    //   (UBaseType_t)5,
-    //   (TaskHandle_t *const)NULL,
-    //   (const BaseType_t)assignedCore);
+    BaseType_t ret = xTaskCreatePinnedToCore(
+      (TaskFunction_t)batteryTask,
+      (const char *const)"Battery Task",
+      (const uint32_t)5000,
+      (void *const) NULL,
+      (UBaseType_t)1,
+      (TaskHandle_t *const)NULL,
+      (const BaseType_t)assignedCore);
 
-    // if(ret != pdPASS)
-    // {
-    //   Serial.println("Battery Task Creation Failed");
-    //   return 0;
-    // }
+    if(ret != pdPASS)
+    {
+      Serial.println("Battery Task Creation Failed");
+      return 0;
+    }
     return 1;
 }
 
