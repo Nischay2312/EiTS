@@ -154,7 +154,7 @@ static void mp3_player_task(void *pvParam)
     }
     total_decode_audio_ms += millis() - ms;
     ms = millis();
-    vTaskDelay(2 / portTICK_PERIOD_MS);
+    //vTaskDelay(2 / portTICK_PERIOD_MS);
   }
   log_i("MP3 stop.");
   taskState = 0;

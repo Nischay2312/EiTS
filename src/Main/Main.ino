@@ -87,10 +87,15 @@ void setup() {
   }
   delay(2000);
   Serial.println("System Start");
+  myLoop();
 }
 
 void loop() {
-  //start the battery task
+  //Dont put code here
+}
+
+void myLoop(){
+    //start the battery task
   batteryData Bdata;
   int ret = startBatteryTask(AUDIOASSIGNCORE);
 
@@ -109,13 +114,13 @@ void loop() {
   vTaskDelay(1000 / portTICK_PERIOD_MS);
 
   while(1){
-    // bool ret = false;//playVideoWithAudio(video_idx);
-    // if(ret){
-    //   video_idx = video_idx + 1;
-    // }
-    // else{
-    //   video_idx = 1;
-    // }
+    bool ret = playVideoWithAudio(video_idx);
+    if(ret){
+      video_idx = video_idx + 1;
+    }
+    else{
+      video_idx = 1;
+    }
     
     //check if there is something in the battery queue
     if(xQueueReceive(batteryQueue, &Bdata, 0)){
