@@ -69,20 +69,20 @@ int startBatteryTask(BaseType_t assignedCore)
     Serial.print(F(" with Chip ID: 0x")); 
     Serial.println(max17048.getChipID(), HEX);
     
-    BaseType_t ret = xTaskCreatePinnedToCore(
-      (TaskFunction_t)batteryTask,
-      (const char *const)"Battery Task",
-      (const uint32_t)2000,
-      (void *const) NULL,
-      (UBaseType_t)5,
-      (TaskHandle_t *const)NULL,
-      (const BaseType_t)assignedCore);
+    // BaseType_t ret = xTaskCreatePinnedToCore(
+    //   (TaskFunction_t)batteryTask,
+    //   (const char *const)"Battery Task",
+    //   (const uint32_t)2000,
+    //   (void *const) NULL,
+    //   (UBaseType_t)5,
+    //   (TaskHandle_t *const)NULL,
+    //   (const BaseType_t)assignedCore);
 
-    if(ret != pdPASS)
-    {
-      Serial.println("Battery Task Creation Failed");
-      return 0;
-    }
+    // if(ret != pdPASS)
+    // {
+    //   Serial.println("Battery Task Creation Failed");
+    //   return 0;
+    // }
     return 1;
 }
 
