@@ -19,11 +19,11 @@
 #include <WiFi.h>
 #include <FS.h>
 #include <SD.h>
-//#include <Preferences.h>
-
-
 #include "version.h"
 
+#if CONFIG_IDF_TARGET_ESP32S2 || CONFIG_IDF_TARGET_ESP32S3
+#define VSPI FSPI
+#endif
 
 /* Arduino_GFX */
 #include <Arduino_GFX_Library.h>
@@ -36,6 +36,7 @@ Arduino_GFX *gfx = new Arduino_ST7735(bus, RST /* RST */, 1 /* rotation */, fals
 
 /* MJPEG Video */
 #include "decodetask.h"
+void playVideo(File vFile, File afile);
 
 /* Variables */
 static int next_frame = 0;
@@ -53,9 +54,10 @@ static int drawMCU(JPEGDRAW *pDraw) {
 
 void setup() {
   disableCore0WDT();
+  Serial.begin(115200);
 
   WiFi.mode(WIFI_OFF);
-  Serial.begin(115200);
+  Serial.println("Wifi is off");
 
   // Init Display
   gfx->begin(80000000);
@@ -81,8 +83,7 @@ void setup() {
     return;
   }
 
-  // preferences.begin(APP_NAME, false);
-  video_idx = 1;//preferences.getUInt(K_VIDEO_INDEX, 1);
+  video_idx = 1;
   Serial.printf("videoIndex: %d\n", video_idx);
 
   gfx->setCursor(20, 20);
@@ -110,7 +111,8 @@ void loop() {
 }
 
 bool playVideoWithAudio(int channel) {
-
+  
+  Serial.printf("videoIndex: %d\n", channel);
   char aFilePath[40];
   sprintf(aFilePath, "%s%d%s", BASE_PATH, channel, MP3_FILENAME);
 
@@ -144,15 +146,19 @@ bool playVideoWithAudio(int channel) {
     gfx->printf("Audio player task start failed: %d\n", ret);
   }
 
-  // while(taskState == 0){
-
-  // }
-  // while(taskState != 0){
-
-  // }
-  // taskState = 0;
   Serial.println("Start play video");
+  playVideo(vFile, aFile);
 
+  Serial.println("AV end");
+
+  vFile.close();
+  aFile.close();
+
+  return true;
+}
+
+void playVideo(File vFile, File afile){
+  
   start_ms = millis();
   curr_ms = millis();
   next_frame_ms = start_ms + (++next_frame * 1000 / FPS / 2);
@@ -218,25 +224,5 @@ bool playVideoWithAudio(int channel) {
   _mBufIdx = 0;
   next_frame = 0;
   skipped_frames = 0;
-
-  Serial.println("AV end");
-  vFile.close();
-  aFile.close();
-
-  return true;
-  //videoController(1);
 }
 
-void videoController(int next) {
-
-  video_idx += next;
-  if (video_idx <= 0) {
-    video_idx = VIDEO_COUNT;
-  } else if (video_idx > VIDEO_COUNT) {
-    video_idx = 1;
-  }
-  Serial.printf("video_idx : %d\n", video_idx);
-  //preferences.putUInt(K_VIDEO_INDEX, video_idx);
-  //preferences.end();
-  esp_restart();
-}
