@@ -94,59 +94,6 @@ void loop() {
   //Dont put code here
 }
 
-void myLoop(){
-    //start the battery task
-  batteryData Bdata;
-  int ret = startBatteryTask(AUDIOASSIGNCORE);
-
-  if(ret != 1){
-    Serial.println("Battery Task Failed");
-    gfx->println("Battery Task Failed");
-  }
-
-  video_idx = 1;
-  Serial.printf("videoIndex: %d\n", video_idx);
-
-  gfx->setCursor(20, 20);
-  gfx->setTextColor(GREEN);
-  gfx->setTextSize(6, 6, 0);
-  gfx->printf("CH %d", video_idx);
-  vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-  while(1){
-    bool ret = playVideoWithAudio(video_idx);
-    if(ret){
-      video_idx = video_idx + 1;
-    }
-    else{
-      video_idx = 1;
-    }
-    
-    //check if there is something in the battery queue
-    if(xQueueReceive(batteryQueue, &Bdata, 0)){
-      //print the battery data
-      //first make the background black
-      gfx->fillRect(0, 0, 160, 128, BLACK);
-      gfx->setCursor(0, 0);
-      gfx->setTextColor(WHITE);
-      //smaller text size
-      gfx->setTextSize(1, 1, 0);
-      gfx->printf("Battery: %.2f%%\n", Bdata.cellPercentage);
-      gfx->printf("Voltage: %.2f V\n", Bdata.cellVoltage);
-      gfx->printf("Battery rate: %.4f\n", Bdata.chargeRate);
-      Serial.printf("Battery: %.2f%%\n", Bdata.cellPercentage);
-      Serial.printf("Voltage: %.2f V\n", Bdata.cellVoltage);
-      Serial.printf("Battery rate: %.4f\n", Bdata.chargeRate);
-
-      vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-    } 
-  }
-
-  Serial.println("Restarting");
-  esp_restart();
-}
-
 bool playVideoWithAudio(int channel) {
   
   Serial.printf("videoIndex: %d\n", channel);
@@ -263,3 +210,35 @@ void playVideo(File vFile, File afile){
   skipped_frames = 0;
 }
 
+void myLoop(){
+  //start the battery reading task
+  int ret = startBatteryDisplayTask(AUDIOASSIGNCORE);
+
+  if(ret != 1){
+    Serial.println("Battery Display Task Failed");
+    gfx->println("Battery Display Task Failed");
+  }
+
+  video_idx = 1;
+  Serial.printf("videoIndex: %d\n", video_idx);
+
+  gfx->setCursor(20, 20);
+  gfx->setTextColor(GREEN);
+  gfx->setTextSize(6, 6, 0);
+  gfx->printf("CH %d", video_idx);
+  
+  while(1){
+    bool ret = playVideoWithAudio(video_idx);
+    if(ret){
+      video_idx = video_idx + 1;
+    }
+    else{
+      video_idx = 1;
+    }
+
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+  }
+
+  Serial.println("Restarting");
+  esp_restart();
+}

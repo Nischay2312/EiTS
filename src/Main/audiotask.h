@@ -19,6 +19,8 @@
 #define GAIN_LEVEL 0.8
 
 volatile uint8_t taskState = 0;
+TaskHandle_t _mp3_player_task;
+TaskHandle_t _aac_player_task;
 
 static unsigned long total_read_audio_ms = 0;
 static unsigned long total_decode_audio_ms = 0;
@@ -172,7 +174,7 @@ static BaseType_t aac_player_task_start(Stream *input, BaseType_t audioAssignCor
       (const uint32_t)2000,
       (void *const)input,
       (UBaseType_t)configMAX_PRIORITIES - 1,
-      (TaskHandle_t *const)NULL,
+      (TaskHandle_t *const)&_aac_player_task,
       (const BaseType_t)audioAssignCore);
 }
 
@@ -186,6 +188,6 @@ static BaseType_t mp3_player_task_start(Stream *input, BaseType_t audioAssignCor
       (const uint32_t)2000,
       (void *const)input,
       (UBaseType_t)configMAX_PRIORITIES - 1,
-      (TaskHandle_t *const)NULL,
+      (TaskHandle_t *const)&_mp3_player_task,
       (const BaseType_t)audioAssignCore);
 }
