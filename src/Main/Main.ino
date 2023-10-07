@@ -38,8 +38,11 @@ Arduino_GFX *gfx = new Arduino_ST7735(bus, RST /* RST */, 1 /* rotation */, fals
 #include "decodetask.h"
 void playVideo(File vFile, File afile);
 
-/* Batter Management */
+/* Battery Management */
 #include "batterytask.h"
+
+/* Button Input*/
+#include "buttontask.h"
 
 /* Variables */
 static int next_frame = 0;
@@ -219,6 +222,14 @@ void myLoop(){
     gfx->println("Battery Display Task Failed");
   }
 
+  //start the button task
+  ret = SetupButton(AUDIOASSIGNCORE);
+
+  if(ret != 1){
+    Serial.println("Button Task Failed");
+    gfx->println("Button Task Failed");
+  }
+
   video_idx = 1;
   Serial.printf("videoIndex: %d\n", video_idx);
 
@@ -228,14 +239,33 @@ void myLoop(){
   gfx->printf("CH %d", video_idx);
   
   while(1){
-    bool ret = playVideoWithAudio(video_idx);
-    if(ret){
-      video_idx = video_idx + 1;
-    }
-    else{
-      video_idx = 1;
-    }
+    // bool ret = playVideoWithAudio(video_idx);
+    // if(ret){
+    //   video_idx = video_idx + 1;
+    // }
+    // else{
+    //   video_idx = 1;
+    // }
 
+    //read data from the button queue
+    buttonData receivedData;
+    if(xQueueReceive(buttonQueue, &receivedData, 0)){
+      //print the guesture:
+      switch(receivedData.Type){
+        case BUTTON_PRESSED:
+          Serial.println("Single Press received");
+          break;
+        case BUTTON_LONG_PRESSED:
+          Serial.println("Long Press received");
+          break;
+        case BUTTON_DOUBLE_PRESSED:
+          Serial.println("Double Press received");
+          break;
+        default:
+          Serial.println("Unrecognized Input");
+          break;       
+      }
+    }
     vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 

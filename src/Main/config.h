@@ -38,7 +38,9 @@
   #define SD_MISO 4
   #define SD_CS 13
 
-#else
+  //Button Pinouts
+  #define BUTTON 37
+  #else
   //Esp32S3 pinouts
   //ST7735 TFT Display Pinouts
   #define MISO -1
@@ -61,4 +63,7 @@
   #define SD_MOSI 11
   #define SD_SCK 12
   #define SD_MISO 13
+
+  //Button Pinouts
+  #define BUTTON 37
 #endif

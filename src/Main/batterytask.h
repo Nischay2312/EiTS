@@ -110,8 +110,6 @@ static void batteryDisplay(void *arg){
     if(xQueueReceive(batteryQueue, &Bdata, 0)){
       Serial.println("Trying to suspend tasks");
       //Suspend the other tasks
-      //vTaskSuspendAll();
-
       //vTaskSuspend(_mp3_player_task);
       vTaskSuspend(_draw_task);
       vTaskSuspend(_decodeTask);
