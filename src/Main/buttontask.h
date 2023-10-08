@@ -13,9 +13,9 @@
 // /////////////////////////////////////////////////////////////////
 
 #define DEBOUNCE_COUNT 20   //number of stable counts for the button input
-#define LONG_PRESS_DURATION 1000 // Duration for long press in ms
-#define DOUBLE_PRESS_TIMEOUT 500 // Timeout for waiting for second press in ms
-#define SINGLE_PRESS_DURATION 250 // Duration for single press in ms
+#define LONG_PRESS_DURATION 300 // Duration for long press in ms
+#define DOUBLE_PRESS_TIMEOUT 250 // Timeout for waiting for second press in ms
+#define SINGLE_PRESS_DURATION 20 // Duration for single press in ms
 #define BUTTON_QUEUE_SIZE 1
 
 TaskHandle_t _buttonTask;
@@ -36,15 +36,18 @@ typedef struct{
 
 void dealButtonBouncing() {
     uint8_t subcounts = 0;
-    bool state = digitalRead(BUTTON);
+    bool lastState = digitalRead(BUTTON);
 
     while(subcounts < DEBOUNCE_COUNT) {
-        if(state == digitalRead(BUTTON)) {
+        if(lastState == digitalRead(BUTTON)) {
+            lastState = digitalRead(BUTTON);
             subcounts++;
         } else {
+            lastState = digitalRead(BUTTON);
             subcounts = 0;
         }
         vTaskDelay(1 / portTICK_PERIOD_MS);
+        //delay(1);
     }
 }
 
@@ -58,7 +61,7 @@ static void IRAM_ATTR buttonISR(){
 
 static void buttonTask(void *arg){
     Serial.println("Button task start!");
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    //vTaskDelay(1000 / portTICK_PERIOD_MS);
 
     //create the queue
     buttonQueue = xQueueCreate(1, sizeof(buttonData));
@@ -67,28 +70,37 @@ static void buttonTask(void *arg){
         Serial.println("Button Queue Creation Failed");
         vTaskDelete(NULL);
     }
+    Serial.println("Button Task queue created successfully!");
     buttonData data;
     bool validPress = false;
     while(1){
         //wait for the interrupt
+        Serial.println("Button Task Waiting for interrupt");
         uint32_t ulNotificationValue = ulTaskNotifyTakeIndexed( 0, pdFALSE, portMAX_DELAY );
         if(ulNotificationValue){
             //stop interrupts
             detachInterrupt(BUTTON);
+            Serial.println("notification received");
 
             validPress = false;
 
             //deal with button bouncing
+            uint32_t presstime = millis();
             dealButtonBouncing();
+            presstime = millis() - presstime;
+            Serial.println("Button debouncing dealt");
+            Serial.printf("Debounce time: %d\n", presstime);
 
             //check if the button is still pressed
             uint32_t pressDuration = 0;
             while(digitalRead(BUTTON) == LOW){
                 vTaskDelay(1 / portTICK_PERIOD_MS);
+                //delay(1);
                 pressDuration++;
             }
 
             if(pressDuration >= LONG_PRESS_DURATION){
+                Serial.printf("Long Press detected\n");
                 data.Type = BUTTON_LONG_PRESSED;
                 validPress = true;
             }
@@ -115,15 +127,18 @@ static void buttonTask(void *arg){
                     }
                 }
                 if(secondPress){
+                    Serial.printf("Double Press detected\n");
                     data.Type = BUTTON_DOUBLE_PRESSED;
                     validPress = true;
                 }
                 else{
+                    Serial.printf("Short Press detected\n");
                     data.Type = BUTTON_PRESSED;
                     validPress = true;
                 }
+                
             }
-
+            Serial.printf("Button Presstime: %d\n", pressDuration);
             //send it over through the queue
             if(validPress){
                 if(BUTTON_QUEUE_SIZE == 1){
@@ -134,14 +149,14 @@ static void buttonTask(void *arg){
                 }
             }
             //return interrupts
-            attachInterrupt(BUTTON, buttonISR, RISING);
+            attachInterrupt(BUTTON, buttonISR, FALLING);
         }
     }
 }
 
 int SetupButton(BaseType_t assignedCore){
     pinMode(BUTTON, INPUT_PULLUP);
-    attachInterrupt(BUTTON, buttonISR, RISING);
+    attachInterrupt(BUTTON, buttonISR, FALLING);
 
     BaseType_t ret = xTaskCreatePinnedToCore(
         buttonTask, /* Function to implement the task */

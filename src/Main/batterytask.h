@@ -111,8 +111,10 @@ static void batteryDisplay(void *arg){
       Serial.println("Trying to suspend tasks");
       //Suspend the other tasks
       //vTaskSuspend(_mp3_player_task);
-      vTaskSuspend(_draw_task);
-      vTaskSuspend(_decodeTask);
+      if(_draw_task && _decodeTask){
+        vTaskSuspend(_draw_task);
+        vTaskSuspend(_decodeTask);
+      }
 
       //print the battery data
       //first make the background black
@@ -133,8 +135,10 @@ static void batteryDisplay(void *arg){
       //Resume the Tasks
       //xTaskResumeAll();
       //vTaskResume(_mp3_player_task);
-      vTaskResume(_draw_task);
-      vTaskResume(_decodeTask);
+      if(_draw_task && _decodeTask){
+        vTaskResume(_draw_task);
+        vTaskResume(_decodeTask);
+      }
     } 
     vTaskDelay(10000 / portTICK_PERIOD_MS);
   }

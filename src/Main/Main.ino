@@ -239,17 +239,18 @@ void myLoop(){
   gfx->printf("CH %d", video_idx);
   
   while(1){
-    // bool ret = playVideoWithAudio(video_idx);
-    // if(ret){
-    //   video_idx = video_idx + 1;
-    // }
-    // else{
-    //   video_idx = 1;
-    // }
+    bool ret = playVideoWithAudio(video_idx);
+    if(ret){
+      video_idx = video_idx + 1;
+    }
+    else{
+      video_idx = 1;
+    }
 
     //read data from the button queue
     buttonData receivedData;
     if(xQueueReceive(buttonQueue, &receivedData, 0)){
+      Serial.println("----------------");
       //print the guesture:
       switch(receivedData.Type){
         case BUTTON_PRESSED:
@@ -265,6 +266,7 @@ void myLoop(){
           Serial.println("Unrecognized Input");
           break;       
       }
+      Serial.println("----------------");
     }
     vTaskDelay(100 / portTICK_PERIOD_MS);
   }

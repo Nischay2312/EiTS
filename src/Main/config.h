@@ -39,7 +39,7 @@
   #define SD_CS 13
 
   //Button Pinouts
-  #define BUTTON 37
+  #define BUTTON 8
   #else
   //Esp32S3 pinouts
   //ST7735 TFT Display Pinouts
