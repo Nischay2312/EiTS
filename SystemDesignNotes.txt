@@ -1,0 +1,14 @@
+main task:
+-manages the other tasks : button info, battery management and video playing.
+-button inputs: single tap: start/stop the video file. 
+-if a notification from button task is received then store and acto accordingly.
+-routinely checks battery. if a long tap is received and video is paused then display battery info.
+-if battery info falls below a threhold, then force on battery charge
+-if a single tap is received then send the videotask a queue notification to start/stop the video playback.
+-if a double tap is received then send the video task a queue notification to go to next item.
+
+videoPlaying task:
+-manages mjpeg play and mp3 play
+-repeats the file
+-checks if received a new queue object which tells whether to play/pause or go to next file.
+
