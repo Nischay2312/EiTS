@@ -138,11 +138,13 @@ static void aac_player_task(void *pvParam)
 static libhelix::MP3DecoderHelix _mp3(mp3AudioDataCallback);
 static void mp3_player_task(void *pvParam)
 {
+  Serial.println("MP3 Player Task started");
   taskState = 1;
   Stream *input = (Stream *)pvParam;
 
   int r, w;
   unsigned long ms = millis();
+  uint8_t notif = 0;
   while (r = input->readBytes(_frame, MP3_MAX_FRAME_SIZE))
   {
     total_read_audio_ms += millis() - ms;
@@ -156,11 +158,25 @@ static void mp3_player_task(void *pvParam)
     }
     total_decode_audio_ms += millis() - ms;
     ms = millis();
+    //check if we received a notification from queue
+    if((mp3QueueEvent != NULL) && (xQueueReceive(mp3QueueEvent, &notif, 0) == pdPASS)){
+      Serial.println("Mp3 Player Task queue notification received");
+      if(notif == 1){
+        Serial.println("Premature closing required for mp3 task");
+        break;
+      }
+    }
     //vTaskDelay(2 / portTICK_PERIOD_MS);
   }
   log_i("MP3 stop.");
   taskState = 0;
   Serial.println("MP3 Finished");
+  if(notif != 0){
+    Serial.println("MP3 player Task closed prematurely as notif was not 0");
+  }
+
+  notif = 2;
+  xQueueOverwrite(mp3QueueEvent, &notif);
   vTaskDelete(NULL);
 }
 
@@ -185,7 +201,7 @@ static BaseType_t mp3_player_task_start(Stream *input, BaseType_t audioAssignCor
   return xTaskCreatePinnedToCore(
       (TaskFunction_t)mp3_player_task,
       (const char *const)"MP3 Player Task",
-      (const uint32_t)2000,
+      (const uint32_t)5000,
       (void *const)input,
       (UBaseType_t)configMAX_PRIORITIES - 1,
       (TaskHandle_t *const)&_mp3_player_task,
