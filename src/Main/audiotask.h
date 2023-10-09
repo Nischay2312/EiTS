@@ -144,38 +144,76 @@ static void mp3_player_task(void *pvParam)
 
   int r, w;
   unsigned long ms = millis();
-  uint8_t notif = 0;
-  while (r = input->readBytes(_frame, MP3_MAX_FRAME_SIZE))
-  {
-    total_read_audio_ms += millis() - ms;
-    ms = millis();
+  uint8_t notif = MP3_NORMAL;
+  uint8_t ret = MP3_NORMAL;
+  bool play = true;
 
-    while (r > 0)
-    {
-      w = _mp3.write(_frame, r);
-      // log_i("r: %d, w: %d\n", r, w);
-      r -= w;
+  while (1)
+  {
+    if(play){
+      r = input->readBytes(_frame, MP3_MAX_FRAME_SIZE);
+      if(r == 0){
+        Serial.println("MP3 Player Task finished reading file");
+        break;
+      }
+      total_read_audio_ms += millis() - ms;
+      ms = millis();
+
+      while (r > 0)
+      {
+        w = _mp3.write(_frame, r);
+        // log_i("r: %d, w: %d\n", r, w);
+        r -= w;
+      }
+      total_decode_audio_ms += millis() - ms;
+      ms = millis();
     }
-    total_decode_audio_ms += millis() - ms;
-    ms = millis();
+    else if(!play){
+      //player is paused here to just wait for 10ms
+      vTaskDelay(10 / portTICK_PERIOD_MS);
+    }
     //check if we received a notification from queue
     if((mp3QueueEvent != NULL) && (xQueueReceive(mp3QueueEvent, &notif, 0) == pdPASS)){
       Serial.println("Mp3 Player Task queue notification received");
-      if(notif == 1){
+      
+      //decode the notification
+      if(notif == MP3_STOP_C){
         Serial.println("Premature closing required for mp3 task");
+        //return acknowledgement
+        ret = MP3_STOP;
+        xQueueOverwrite(mp3QueueEvent, &ret);
+        Serial.println("MP3TASK ACK Sent");
         break;
       }
+
+      else if(notif == MP3_PAUSE_C){
+        Serial.println("Pausing mp3 player");
+        play = false;
+        //return acknowledgement
+        ret = MP3_PAUSE;
+        xQueueOverwrite(mp3QueueEvent, &ret);
+        Serial.println("MP3TASK ACK Sent");
+      }
+
+      else if(notif == MP3_RESUME_C){
+        Serial.println("Resuming mp3 player");
+        play = true;
+        //return acknowledgement
+        ret = MP3_RESUME;
+        xQueueOverwrite(mp3QueueEvent, &ret);
+        Serial.println("MP3TASK ACK Sent");
+      }
     }
-    //vTaskDelay(2 / portTICK_PERIOD_MS);
   }
   log_i("MP3 stop.");
   taskState = 0;
   Serial.println("MP3 Finished");
-  if(notif != 0){
-    Serial.println("MP3 player Task closed prematurely as notif was not 0");
+  if(notif == MP3_STOP_C){
+    Serial.println("MP3 player Task closed prematurely as requested");
   }
 
-  notif = 2;
+  //send a notification telling that the task has been killed by itself
+  notif = MP3_STOP;
   xQueueOverwrite(mp3QueueEvent, &notif);
   vTaskDelete(NULL);
 }

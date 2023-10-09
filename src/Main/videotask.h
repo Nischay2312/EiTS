@@ -27,6 +27,22 @@ static xQueueHandle mp3QueueEvent;
 //handle for video player task
 static xTaskHandle _videoPlayerTask;
 
+//video event enum
+typedef enum{
+    VIDEO_FINISHED
+}videoEvent_enum;
+
+//notification enum for the mp3 task
+typedef enum{
+    MP3_STOP_C,
+    MP3_STOP,
+    MP3_PAUSE_C,
+    MP3_PAUSE,
+    MP3_RESUME_C,
+    MP3_RESUME,
+    MP3_NORMAL
+}mp3Event_enum;
+
 /* Arduino_GFX */
 #include <Arduino_GFX_Library.h>
 Arduino_DataBus *bus = new Arduino_ESP32SPI(DC, CS, SCK, MOSI, MISO, VSPI);
@@ -41,11 +57,6 @@ File aFile;
 #include "decodetask.h"
 void playVideo();
 File vFile;
-
-//video event enum
-typedef enum{
-    VIDEO_FINISHED
-}videoEvent_enum;
 
 // pixel drawing callback
 static int drawMCU(JPEGDRAW *pDraw) {
@@ -138,41 +149,29 @@ void closeVideoPlayer(){
   Serial.println("Closing the video file");
   //close the file
     vFile.close();
-
 }
 
 // function to close the audio player
 void closeAudioPlayer(){
   vTaskDelay(50/ portTICK_PERIOD_MS);
-  // if (_mp3_player_task) {
-  //     vTaskDelete(_mp3_player_task);
-  //     _mp3_player_task = NULL;
-  //     Serial.println("Force Kill Audio Task");
-  // }
-
-  uint8_t notif = 0;
-
+  uint8_t notif = MP3_NORMAL;
   //read the queue and see if the mp3 task killed itself.
   if((xQueueReceive(mp3QueueEvent, &notif, 0) == pdPASS)){
-    if(notif == 2){
+    if(notif == MP3_STOP){
       Serial.println("Mp3 Task killed itself");
       aFile.close();
       return;
     }
+    else{
+        //put the notification back in the queue
+        xQueueOverwrite(mp3QueueEvent, &notif);
+    }
   }
-
-  //other wise tell it to close itself.
-  //send queue notification
+  
+  //send queue notification to close the mp3 task
   Serial.println("Sending notification to close the mp3 task");
-  notif = 1;
+  notif = MP3_STOP_C;
   xQueueOverwrite(mp3QueueEvent, &notif);
-  // while(_mp3_player_task != NULL){
-  //   Serial.println("Waiting for mp3_player_Task to be dead");
-  //   vTaskDelay(10/ portTICK_PERIOD_MS);
-  // }
-  // notif = 0;
-  // xQueueOverwrite(mp3QueueEvent, &notif);
-  //_mp3.end();
   //close the file
   Serial.println("closing audio file");
   aFile.close();
@@ -180,9 +179,84 @@ void closeAudioPlayer(){
 
 // function to stop the playback
 void stopPlayback(){
+  //stop the video playack task
+  if(_videoPlayerTask){
+    vTaskDelete(_videoPlayerTask);
+  }
   //stop the playback
   closeVideoPlayer();
   closeAudioPlayer();
+}
+
+//function to pause the playback
+void pausePlayback(){
+  //pause the playback
+    Serial.println("Pausing the playback");
+    //suspend the video player task and the draw and decode tasks
+    if(_videoPlayerTask){
+      vTaskSuspend(_videoPlayerTask);
+    }
+    if(_draw_task && _decodeTask){
+      vTaskSuspend(_draw_task);
+      vTaskSuspend(_decodeTask);
+    }
+
+    //for the audio player task, send a notification to pause the playback
+    uint8_t notif = MP3_PAUSE_C;
+    xQueueOverwrite(mp3QueueEvent, &notif);
+    //give a delay to make sure the audio player task has paused the playback
+    vTaskDelay(20 / portTICK_PERIOD_MS);
+    //wait for the notification from the audio player task
+    while(1){
+      if((xQueueReceive(mp3QueueEvent, &notif, portMAX_DELAY))){
+        Serial.println("mp3queue from mp3 task Received: ");
+        Serial.println(notif);
+        if(notif == MP3_PAUSE){
+          Serial.println("Audio player task paused the playback");
+          break;
+        }
+        else{
+          //put the notification back in the queue
+          xQueueOverwrite(mp3QueueEvent, &notif);
+        }
+      }
+      Serial.println("Waiting to hear back from the AudioTask if PAUSED");
+      vTaskDelay(100 / portTICK_PERIOD_MS);
+    }
+}
+
+//function to resume the playback
+void resumePlayback(){
+    //resume the playback
+        Serial.println("Resuming the playback");
+        //resume the video player task and the draw and decode tasks
+        if(_videoPlayerTask){
+        vTaskResume(_videoPlayerTask);
+        }
+        if(_draw_task && _decodeTask){
+        vTaskResume(_draw_task);
+        vTaskResume(_decodeTask);
+        }
+    
+        //for the audio player task, send a notification to resume the playback
+        uint8_t notif = MP3_RESUME_C;
+        xQueueOverwrite(mp3QueueEvent, &notif);
+        //give a delay to make sure the audio player task has resumed the playback
+        vTaskDelay(20 / portTICK_PERIOD_MS);
+        //wait for the notification from the audio player task
+        while(1){
+        if((xQueueReceive(mp3QueueEvent, &notif, 0) == pdPASS)){
+            if(notif == MP3_RESUME){
+            Serial.println("Audio player task resumed the playback");
+            break;
+            }
+            else{
+            //put the notification back in the queue
+            xQueueOverwrite(mp3QueueEvent, &notif);
+            }
+        }
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+        }
 }
 
 // function to control the video playback
@@ -222,7 +296,6 @@ void playVideo(){
   closeVideoPlayer();
   closeAudioPlayer();
 }
-
 
 // Function to play a video file
 bool playVideoWithAudio(int channel) {
@@ -265,9 +338,6 @@ bool playVideoWithAudio(int channel) {
   playVideo();
 
   Serial.println("AV end");
-
-//   vFile.close();
-//   aFile.close();
 
   return true;
 }
@@ -349,6 +419,7 @@ static void videoControlTask( void *arg){
     video_idx = 1;
 
     bool isPlaying = false;
+    bool videoPaused = false;
 
     //initalize the video event queue
     uint8_t videoEvent = 0;
@@ -365,24 +436,35 @@ static void videoControlTask( void *arg){
             //decode the event
             if(event.Type == BUTTON_PRESSED){
                 Serial.println("Video Control Task received a single press");
-                if(isPlaying){
-                    Serial.println("Playback Stopped");
-                    isPlaying = false;
-                    if(_videoPlayerTask){
-                      vTaskDelete(_videoPlayerTask);
-                    }
-                    stopPlayback();
+                //check if the video is paused
+                if(videoPaused && isPlaying){
+                    Serial.println("Resuming playback");
+                    videoPaused = false;
+                    isPlaying = true;
+                    resumePlayback();
                 }
+                else if(isPlaying){
+                    Serial.println("Pausing playback");
+                    videoPaused = true;
+                    pausePlayback();
+                }
+                // if(isPlaying){
+                //     Serial.println("Playback Stopped");
+                //     isPlaying = false;
+                //     stopPlayback();
+                // }
                 else{
                     Serial.println("Starting playback");
                     isPlaying = true;
+                    videoPaused = false;
+
                     //start the task that plays the video
                     int ret = startVideoPlayerTask(AUDIOASSIGNCORE, video_idx);
                     if(ret == 2){
                         //video file not found, reset the video index
-                        video_idx = 1;
+                        video_idx = 1; //reset it
                         int ret2 =  startVideoPlayerTask(AUDIOASSIGNCORE, video_idx);
-                        if(ret2 == 2){
+                        if(ret2 == 2){ //file not found again
                             Serial.println("Video Player File Not found.");
                             Serial.println("No video File found. Make sure you have the correct video files in the SD card");
                             break;
@@ -402,12 +484,10 @@ static void videoControlTask( void *arg){
             else if(event.Type == BUTTON_DOUBLE_PRESSED){
                 Serial.println("Video control task received a double press");
                 //stop the video if playing
-                if(isPlaying){
+                if(isPlaying || videoPaused){
                     Serial.println("Stopping playback to restart");
                     isPlaying = false;
-                    if(_videoPlayerTask){
-                      vTaskDelete(_videoPlayerTask);
-                    }
+                    videoPaused = false;
                     stopPlayback();
                 }
                 isPlaying = true;
@@ -451,7 +531,7 @@ static void videoControlTask( void *arg){
                     break;
             }
         }
-        vTaskDelay(50 / portTICK_PERIOD_MS);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     }
     Serial.println("Video Control Task has ended. This should not happen! Check the serial monitor for more info");
     vTaskDelete(NULL);
