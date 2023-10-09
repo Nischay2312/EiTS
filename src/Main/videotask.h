@@ -17,6 +17,8 @@ static int next_frame = 0;
 static int skipped_frames = 0;
 static unsigned long start_ms, curr_ms, next_frame_ms;
 static unsigned int video_idx = 1;
+uint32_t pauseStartTime;
+uint32_t pauseDuration;
 
 //Queue to get info from the main task
 static xQueueHandle eventQueueMain;
@@ -28,11 +30,6 @@ static xQueueHandle mp3QueueEvent;
 static xQueueHandle mp3QueueTransmitt;
 //handle for video player task
 static xTaskHandle _videoPlayerTask;
-
-SemaphoreHandle_t videoSemaphore = xSemaphoreCreateBinary();
-QueueHandle_t pauseDurationQueue = xQueueCreate(1, sizeof(uint32_t));
-uint32_t pauseStartTime;
-uint32_t pauseDuration;
 
 //video event enum
 typedef enum{
@@ -161,7 +158,9 @@ void closeVideoPlayer(){
   _mBufIdx = 0;
   next_frame = 0;
   skipped_frames = 0;
-
+  pauseStartTime = 0;
+  pauseDuration = 0;
+  
   Serial.println("Closing the video file");
   //close the file
     vFile.close();
@@ -220,7 +219,7 @@ void stopPlayback(){
   closeVideoPlayer();
   closeAudioPlayer();
   if(_videoPlayerTask){
-    vTaskSuspend(_videoPlayerTask);
+    vTaskDelete(_videoPlayerTask);
   }
 }
 
@@ -230,7 +229,6 @@ void pausePlayback(){
     Serial.println("Pausing the playback");
 
     pauseStartTime = millis();
-    //xSemaphoreTake(videoSemaphore, portMAX_DELAY);  // Signal to pause the video
 
     //suspend the video player task and the draw and decode tasks
     if(_videoPlayerTask){
@@ -249,7 +247,7 @@ void pausePlayback(){
     //wait for the notification from the audio player task
     while(1){
       if((xQueueReceive(mp3QueueTransmitt, &notif, portMAX_DELAY))){
-        Serial.println("mp3queue from mp3 task Received: ");
+        Serial.println("Pause Task Received: mp3queue from mp3 task Received: ");
         Serial.println(notif);
         if(notif == MP3_PAUSE){
           Serial.println("Audio player task paused the playback");
@@ -290,7 +288,7 @@ void resumePlayback(){
         //wait for the notification from the audio player task
         while(1){
         if((xQueueReceive(mp3QueueTransmitt, &notif, portMAX_DELAY))){
-            Serial.println("mp3queue from mp3 task Received: ");
+            Serial.println("Resume Task: mp3queue from mp3 task Received: ");
             Serial.println(notif);
             if(notif == MP3_RESUME){
             Serial.println("Audio player task resumed the playback");
@@ -328,13 +326,6 @@ void playVideo(){
 
     while (millis() - pauseDuration < next_frame_ms) {
       vTaskDelay(pdMS_TO_TICKS(5));
-
-      // if (xSemaphoreTake(videoSemaphore, 0) == pdPASS) {
-      //   uint32_t duration;
-      //   xQueueReceive(pauseDurationQueue, &duration, portMAX_DELAY);
-      //   pause_duration += duration;
-      //   xSemaphoreGive(videoSemaphore);  // Waiting for the resume signal
-      // }
     }
 
     curr_ms = millis();
@@ -446,7 +437,7 @@ int startVideoPlayerTask(BaseType_t assignedCore, unsigned int index){
     BaseType_t ret = xTaskCreatePinnedToCore(
       (TaskFunction_t)videoPlayerTask,
       (const char *const)"Video Player Task",
-      (const uint32_t)40000,
+      (const uint32_t)10000,
       (void *const)index,
       (UBaseType_t)configMAX_PRIORITIES - 1,
       (TaskHandle_t *const)_videoPlayerTask,
@@ -519,53 +510,68 @@ static void videoControlTask( void *arg){
                         if(ret2 == 2){ //file not found again
                             Serial.println("Video Player File Not found.");
                             Serial.println("No video File found. Make sure you have the correct video files in the SD card");
-                            break;
+                            //break;
                         }
                         if(ret2 == 0){
                             Serial.println("Video Player Task Failed");
-                            break;
+                            //break;
+                            esp_restart();
                         }
                     }
                     if(ret == 0){
                         Serial.println("Video Player Task Failed");
-                        break;
+                        //break;
+                        esp_restart();
                     }
                     Serial.println("Playback Start Sucessful");
                 }
+                //vTaskDelay(50 / portTICK_PERIOD_MS);
             }
             else if(event.Type == BUTTON_DOUBLE_PRESSED){
                 Serial.println("Video control task received a double press");
-                //stop the video if playing
-                if(isPlaying || videoPaused){
-                    Serial.println("Stopping playback to restart");
-                    isPlaying = false;
-                    videoPaused = false;
-                    stopPlayback();
+                if(videoPaused || !isPlaying){ //dont do anything+ unless video is paused. or stopped
+                  if(!videoPaused && isPlaying){
+                    //the video
+                    videoPaused = true;
+                    isPlaying = true;
+                    pausePlayback();
+                  }
+                
+                  //stop the video if playing
+                  if(isPlaying && videoPaused){
+                      Serial.println("Stopping playback to restart");
+                      isPlaying = false;
+                      videoPaused = false;
+                      stopPlayback();
+                  }
+                  isPlaying = true;
+                  //play the next video
+                  video_idx++;
+                  Serial.println("Trying to switch to next video");
+                  int ret = startVideoPlayerTask(AUDIOASSIGNCORE, video_idx);
+                  if(ret == 2){
+                      //video file not found, reset the video index
+                      video_idx = 1;
+                      int ret2 =  startVideoPlayerTask(AUDIOASSIGNCORE, video_idx);
+                      if(ret2 == 2){
+                          Serial.println("Video Player File Not found.");
+                          Serial.println("No video File found. Make sure you have the correct video files in the SD card");
+                        //break;
+                      }
+                      if(ret2 == 0){
+                          Serial.println("Video Player Task Failed");
+                          //break;
+                          esp_restart();
+                      }
+                  }
+                  if(ret == 0){
+                      Serial.println("Video Player Task Failed");
+                      //break;
+                      esp_restart();
+                  }
+                  Serial.println("switch successful");
+                  //vTaskDelay(50 / portTICK_PERIOD_MS);
                 }
-                isPlaying = true;
-                //play the next video
-                video_idx++;
-                Serial.println("Trying to switch to next video");
-                int ret = startVideoPlayerTask(AUDIOASSIGNCORE, video_idx);
-                if(ret == 2){
-                    //video file not found, reset the video index
-                    video_idx = 1;
-                    int ret2 =  startVideoPlayerTask(AUDIOASSIGNCORE, video_idx);
-                    if(ret2 == 2){
-                        Serial.println("Video Player File Not found.");
-                        Serial.println("No video File found. Make sure you have the correct video files in the SD card");
-                        break;
-                    }
-                    if(ret2 == 0){
-                        Serial.println("Video Player Task Failed");
-                        break;
-                    }
-                }
-                if(ret == 0){
-                    Serial.println("Video Player Task Failed");
-                    break;
-                }
-                Serial.println("switch successful");
             }
         }
         
@@ -577,6 +583,7 @@ static void videoControlTask( void *arg){
                 case VIDEO_FINISHED:
                     Serial.println("Video playing finished");
                     isPlaying = false;
+                    videoPaused = false;
                     break;
                 default:
                     Serial.println("Unrecognized Video Event");
@@ -586,6 +593,17 @@ static void videoControlTask( void *arg){
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
     Serial.println("Video Control Task has ended. This should not happen! Check the serial monitor for more info");
+    
+    //delete the queues and tasks
+    // vQueueDelete(eventQueueVideo);
+    // vQueueDelete(mp3QueueEvent);
+    // vQueueDelete(mp3QueueTransmitt);
+    // closeVideoPlayer();
+    // vTaskDelete(_mp3_player_task);
+
+    // //send a notification to main loop for task restart.
+    // event.Type = RESTARTME;
+    // xQueueOverwrite(eventQueueMain, &event);
     vTaskDelete(NULL);
 }
 

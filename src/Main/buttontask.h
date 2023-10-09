@@ -25,7 +25,8 @@ static xQueueHandle buttonQueue;
 typedef enum{
     BUTTON_PRESSED,
     BUTTON_LONG_PRESSED,
-    BUTTON_DOUBLE_PRESSED
+    BUTTON_DOUBLE_PRESSED,
+    RESTARTME
 } buttonPressType;
 
 typedef struct{
