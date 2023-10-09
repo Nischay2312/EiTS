@@ -22,10 +22,17 @@ static unsigned int video_idx = 1;
 static xQueueHandle eventQueueMain;
 //Queue to send info to the video Player task
 static xQueueHandle eventQueueVideo;
-//Queue to notify the mp3 task to stop playing.
+//Queue to notify the mp3 task.
 static xQueueHandle mp3QueueEvent;
+//Queue to notify the player task from mp3.
+static xQueueHandle mp3QueueTransmitt;
 //handle for video player task
 static xTaskHandle _videoPlayerTask;
+
+SemaphoreHandle_t videoSemaphore = xSemaphoreCreateBinary();
+QueueHandle_t pauseDurationQueue = xQueueCreate(1, sizeof(uint32_t));
+uint32_t pauseStartTime;
+uint32_t pauseDuration;
 
 //video event enum
 typedef enum{
@@ -87,6 +94,15 @@ void intializeMP3EventQueue(){
         Serial.println("MP3 Queue Creation Failed");
         while(1){
           Serial.println("MP3 Queue Creation Failed");
+          vTaskDelay(1000 / portTICK_PERIOD_MS);
+        };
+    }
+    mp3QueueTransmitt = xQueueCreate(1, sizeof(uint8_t));
+    if (mp3QueueTransmitt == NULL)
+    {
+        Serial.println("MP3 Transmitt Queue Creation Failed");
+        while(1){
+          Serial.println("MP3 Transmitt Queue Creation Failed");
           vTaskDelay(1000 / portTICK_PERIOD_MS);
         };
     }
@@ -153,10 +169,10 @@ void closeVideoPlayer(){
 
 // function to close the audio player
 void closeAudioPlayer(){
-  vTaskDelay(50/ portTICK_PERIOD_MS);
+  //vTaskDelay(50/ portTICK_PERIOD_MS);
   uint8_t notif = MP3_NORMAL;
   //read the queue and see if the mp3 task killed itself.
-  if((xQueueReceive(mp3QueueEvent, &notif, 0) == pdPASS)){
+  if((xQueueReceive(mp3QueueTransmitt, &notif, pdMS_TO_TICKS(5)))){
     if(notif == MP3_STOP){
       Serial.println("Mp3 Task killed itself");
       aFile.close();
@@ -164,7 +180,7 @@ void closeAudioPlayer(){
     }
     else{
         //put the notification back in the queue
-        xQueueOverwrite(mp3QueueEvent, &notif);
+        xQueueOverwrite(mp3QueueTransmitt, &notif);
     }
   }
   
@@ -172,6 +188,23 @@ void closeAudioPlayer(){
   Serial.println("Sending notification to close the mp3 task");
   notif = MP3_STOP_C;
   xQueueOverwrite(mp3QueueEvent, &notif);
+  //wait for the notification from the audio player task
+  while(1){
+    if((xQueueReceive(mp3QueueTransmitt, &notif, portMAX_DELAY))){
+      Serial.println("mp3queue from mp3 task Received: ");
+      Serial.println(notif);
+      if(notif == MP3_STOP){
+        Serial.println("Audio player force stopped playback");
+        break;
+      }
+      else{
+        //put the notification back in the queue
+        xQueueOverwrite(mp3QueueEvent, &notif);
+      }
+    }
+    Serial.println("Waiting to hear back from the AudioTask if PAUSED");
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+  }
   //close the file
   Serial.println("closing audio file");
   aFile.close();
@@ -181,17 +214,24 @@ void closeAudioPlayer(){
 void stopPlayback(){
   //stop the video playack task
   if(_videoPlayerTask){
-    vTaskDelete(_videoPlayerTask);
+    vTaskSuspend(_videoPlayerTask);
   }
   //stop the playback
   closeVideoPlayer();
   closeAudioPlayer();
+  if(_videoPlayerTask){
+    vTaskSuspend(_videoPlayerTask);
+  }
 }
 
 //function to pause the playback
 void pausePlayback(){
   //pause the playback
     Serial.println("Pausing the playback");
+
+    pauseStartTime = millis();
+    //xSemaphoreTake(videoSemaphore, portMAX_DELAY);  // Signal to pause the video
+
     //suspend the video player task and the draw and decode tasks
     if(_videoPlayerTask){
       vTaskSuspend(_videoPlayerTask);
@@ -208,7 +248,7 @@ void pausePlayback(){
     vTaskDelay(20 / portTICK_PERIOD_MS);
     //wait for the notification from the audio player task
     while(1){
-      if((xQueueReceive(mp3QueueEvent, &notif, portMAX_DELAY))){
+      if((xQueueReceive(mp3QueueTransmitt, &notif, portMAX_DELAY))){
         Serial.println("mp3queue from mp3 task Received: ");
         Serial.println(notif);
         if(notif == MP3_PAUSE){
@@ -229,6 +269,10 @@ void pausePlayback(){
 void resumePlayback(){
     //resume the playback
         Serial.println("Resuming the playback");
+
+        pauseDuration = millis() - pauseStartTime + pauseDuration;
+        // xQueueSend(pauseDurationQueue, &pauseDuration, portMAX_DELAY);
+        // xSemaphoreGive(videoSemaphore);  // Signal to resume the video
         //resume the video player task and the draw and decode tasks
         if(_videoPlayerTask){
         vTaskResume(_videoPlayerTask);
@@ -245,7 +289,9 @@ void resumePlayback(){
         vTaskDelay(20 / portTICK_PERIOD_MS);
         //wait for the notification from the audio player task
         while(1){
-        if((xQueueReceive(mp3QueueEvent, &notif, 0) == pdPASS)){
+        if((xQueueReceive(mp3QueueTransmitt, &notif, portMAX_DELAY))){
+            Serial.println("mp3queue from mp3 task Received: ");
+            Serial.println(notif);
             if(notif == MP3_RESUME){
             Serial.println("Audio player task resumed the playback");
             break;
@@ -261,7 +307,6 @@ void resumePlayback(){
 
 // function to control the video playback
 void playVideo(){
-  
   start_ms = millis();
   curr_ms = millis();
   next_frame_ms = start_ms + (++next_frame * 1000 / FPS / 2);
@@ -270,7 +315,7 @@ void playVideo(){
     total_read_video_ms += millis() - curr_ms;
     curr_ms = millis();
 
-    if (millis() < next_frame_ms)  // check show frame or skip frame
+    if (millis() - pauseDuration < next_frame_ms)  // check show frame or skip frame
     {
       // Play video
       mjpeg_draw_frame();
@@ -281,8 +326,15 @@ void playVideo(){
       Serial.println("Skip frame");
     }
 
-    while (millis() < next_frame_ms) {
-      vTaskDelay(pdMS_TO_TICKS(1));
+    while (millis() - pauseDuration < next_frame_ms) {
+      vTaskDelay(pdMS_TO_TICKS(5));
+
+      // if (xSemaphoreTake(videoSemaphore, 0) == pdPASS) {
+      //   uint32_t duration;
+      //   xQueueReceive(pauseDurationQueue, &duration, portMAX_DELAY);
+      //   pause_duration += duration;
+      //   xSemaphoreGive(videoSemaphore);  // Waiting for the resume signal
+      // }
     }
 
     curr_ms = millis();
@@ -396,7 +448,7 @@ int startVideoPlayerTask(BaseType_t assignedCore, unsigned int index){
       (const char *const)"Video Player Task",
       (const uint32_t)40000,
       (void *const)index,
-      (UBaseType_t)configMAX_PRIORITIES - 4,
+      (UBaseType_t)configMAX_PRIORITIES - 1,
       (TaskHandle_t *const)_videoPlayerTask,
       (const BaseType_t)assignedCore);
 
@@ -547,7 +599,7 @@ int startVideoControlTask(BaseType_t assignedCore){
       (const char *const)"Video Control Task",
       (const uint32_t)40000,
       (void *const) NULL,
-      (UBaseType_t)configMAX_PRIORITIES - 4,
+      (UBaseType_t)configMAX_PRIORITIES - 1,
       (TaskHandle_t *const)NULL,
       (const BaseType_t)assignedCore);
 

@@ -180,9 +180,9 @@ static void mp3_player_task(void *pvParam)
       if(notif == MP3_STOP_C){
         Serial.println("Premature closing required for mp3 task");
         //return acknowledgement
-        ret = MP3_STOP;
-        xQueueOverwrite(mp3QueueEvent, &ret);
-        Serial.println("MP3TASK ACK Sent");
+        // ret = MP3_STOP;
+        // xQueueOverwrite(mp3QueueTransmitt, &ret);
+        // Serial.println("MP3TASK ACK Sent");
         break;
       }
 
@@ -191,7 +191,7 @@ static void mp3_player_task(void *pvParam)
         play = false;
         //return acknowledgement
         ret = MP3_PAUSE;
-        xQueueOverwrite(mp3QueueEvent, &ret);
+        xQueueOverwrite(mp3QueueTransmitt, &ret);
         Serial.println("MP3TASK ACK Sent");
       }
 
@@ -200,7 +200,7 @@ static void mp3_player_task(void *pvParam)
         play = true;
         //return acknowledgement
         ret = MP3_RESUME;
-        xQueueOverwrite(mp3QueueEvent, &ret);
+        xQueueOverwrite(mp3QueueTransmitt, &ret);
         Serial.println("MP3TASK ACK Sent");
       }
     }
@@ -214,7 +214,7 @@ static void mp3_player_task(void *pvParam)
 
   //send a notification telling that the task has been killed by itself
   notif = MP3_STOP;
-  xQueueOverwrite(mp3QueueEvent, &notif);
+  xQueueOverwrite(mp3QueueTransmitt, &notif);
   vTaskDelete(NULL);
 }
 
@@ -241,7 +241,7 @@ static BaseType_t mp3_player_task_start(Stream *input, BaseType_t audioAssignCor
       (const char *const)"MP3 Player Task",
       (const uint32_t)5000,
       (void *const)input,
-      (UBaseType_t)configMAX_PRIORITIES - 1,
+      (UBaseType_t)configMAX_PRIORITIES - 3,
       (TaskHandle_t *const)&_mp3_player_task,
       (const BaseType_t)audioAssignCore);
 }

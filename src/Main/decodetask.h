@@ -182,7 +182,7 @@ bool mjpeg_setup(Stream *input, int32_t mjpegBufSize, JPEG_DRAW_CALLBACK *pfnDra
       (const char *const)"MJPEG Draw Task",
       (const uint32_t)2000,
       (void *const)&_pDrawTask,
-      (UBaseType_t)configMAX_PRIORITIES - 1,
+      (UBaseType_t)configMAX_PRIORITIES - 3,
       (TaskHandle_t *const)&_draw_task,
       (const BaseType_t)drawAssignCore);
 

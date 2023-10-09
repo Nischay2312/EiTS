@@ -75,12 +75,12 @@ static void buttonTask(void *arg){
     bool validPress = false;
     while(1){
         //wait for the interrupt
-        Serial.println("Button Task Waiting for interrupt");
+        //Serial.println("Button Task Waiting for interrupt");
         uint32_t ulNotificationValue = ulTaskNotifyTakeIndexed( 0, pdFALSE, portMAX_DELAY );
         if(ulNotificationValue){
             //stop interrupts
             detachInterrupt(BUTTON);
-            Serial.println("notification received");
+            //Serial.println("notification received");
 
             validPress = false;
 
@@ -88,8 +88,8 @@ static void buttonTask(void *arg){
             uint32_t presstime = millis();
             dealButtonBouncing();
             presstime = millis() - presstime;
-            Serial.println("Button debouncing dealt");
-            Serial.printf("Debounce time: %d\n", presstime);
+            //Serial.println("Button debouncing dealt");
+            //Serial.printf("Debounce time: %d\n", presstime);
 
             //check if the button is still pressed
             uint32_t pressDuration = 0;
@@ -100,7 +100,7 @@ static void buttonTask(void *arg){
             }
 
             if(pressDuration >= LONG_PRESS_DURATION){
-                Serial.printf("Long Press detected\n");
+                //Serial.printf("Long Press detected\n");
                 data.Type = BUTTON_LONG_PRESSED;
                 validPress = true;
             }
@@ -127,18 +127,18 @@ static void buttonTask(void *arg){
                     }
                 }
                 if(secondPress){
-                    Serial.printf("Double Press detected\n");
+                    //Serial.printf("Double Press detected\n");
                     data.Type = BUTTON_DOUBLE_PRESSED;
                     validPress = true;
                 }
                 else{
-                    Serial.printf("Short Press detected\n");
+                    //Serial.printf("Short Press detected\n");
                     data.Type = BUTTON_PRESSED;
                     validPress = true;
                 }
                 
             }
-            Serial.printf("Button Presstime: %d\n", pressDuration);
+            //Serial.printf("Button Presstime: %d\n", pressDuration);
             //send it over through the queue
             if(validPress){
                 if(BUTTON_QUEUE_SIZE == 1){
