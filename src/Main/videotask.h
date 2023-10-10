@@ -33,6 +33,10 @@ static xQueueHandle mp3QueueTransmitt;
 //handle for video player task
 static xTaskHandle _videoPlayerTask;
 
+//bools to know which type of mediais playing
+bool noAudio;
+bool noVideo;
+
 //video event enum
 typedef enum{
     VIDEO_FINISHED,
@@ -229,9 +233,13 @@ void stopPlayback(){
   if(_videoPlayerTask){
     vTaskSuspend(_videoPlayerTask);
   }
-  //stop the playback
-  closeVideoPlayer();
-  closeAudioPlayer();
+  if(!noVideo){
+    //stop the playback
+    closeVideoPlayer();
+  }
+  if(!noAudio){
+    closeAudioPlayer();
+  }
   if(_videoPlayerTask){
     vTaskDelete(_videoPlayerTask);
   }
@@ -241,39 +249,41 @@ void stopPlayback(){
 void pausePlayback(){
   //pause the playback
     Serial.println("Pausing the playback");
-
-    pauseStartTime = millis();
-
     //suspend the video player task and the draw and decode tasks
     if(_videoPlayerTask){
       vTaskSuspend(_videoPlayerTask);
     }
-    if(_draw_task && _decodeTask){
-      vTaskSuspend(_draw_task);
-      vTaskSuspend(_decodeTask);
-    }
+    if(!noVideo){
+      pauseStartTime = millis();
 
-    //for the audio player task, send a notification to pause the playback
-    uint8_t notif = MP3_PAUSE_C;
-    xQueueOverwrite(mp3QueueEvent, &notif);
-    //give a delay to make sure the audio player task has paused the playback
-    vTaskDelay(20 / portTICK_PERIOD_MS);
-    //wait for the notification from the audio player task
-    while(1){
-      if((xQueueReceive(mp3QueueTransmitt, &notif, portMAX_DELAY))){
-        Serial.println("Pause Task Received: mp3queue from mp3 task Received: ");
-        Serial.println(notif);
-        if(notif == MP3_PAUSE){
-          Serial.println("Audio player task paused the playback");
-          break;
-        }
-        else{
-          //put the notification back in the queue
-          xQueueOverwrite(mp3QueueEvent, &notif);
-        }
+      if(_draw_task && _decodeTask){
+        vTaskSuspend(_draw_task);
+        vTaskSuspend(_decodeTask);
       }
-      Serial.println("Waiting to hear back from the AudioTask if PAUSED");
-      vTaskDelay(100 / portTICK_PERIOD_MS);
+    }
+    if(!noAudio){
+      //for the audio player task, send a notification to pause the playback
+      uint8_t notif = MP3_PAUSE_C;
+      xQueueOverwrite(mp3QueueEvent, &notif);
+      //give a delay to make sure the audio player task has paused the playback
+      vTaskDelay(20 / portTICK_PERIOD_MS);
+      //wait for the notification from the audio player task
+      while(1){
+        if((xQueueReceive(mp3QueueTransmitt, &notif, portMAX_DELAY))){
+          Serial.println("Pause Task Received: mp3queue from mp3 task Received: ");
+          Serial.println(notif);
+          if(notif == MP3_PAUSE){
+            Serial.println("Audio player task paused the playback");
+            break;
+          }
+          else{
+            //put the notification back in the queue
+            xQueueOverwrite(mp3QueueEvent, &notif);
+          }
+        }
+        Serial.println("Waiting to hear back from the AudioTask if PAUSED");
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+      }
     }
 }
 
@@ -281,81 +291,102 @@ void pausePlayback(){
 void resumePlayback(){
     //resume the playback
         Serial.println("Resuming the playback");
-
-        pauseDuration = millis() - pauseStartTime + pauseDuration;
-        // xQueueSend(pauseDurationQueue, &pauseDuration, portMAX_DELAY);
-        // xSemaphoreGive(videoSemaphore);  // Signal to resume the video
-        //resume the video player task and the draw and decode tasks
         if(_videoPlayerTask){
-        vTaskResume(_videoPlayerTask);
+          vTaskResume(_videoPlayerTask);
         }
-        if(_draw_task && _decodeTask){
-        vTaskResume(_draw_task);
-        vTaskResume(_decodeTask);
+        if(!noVideo){
+          pauseDuration = millis() - pauseStartTime + pauseDuration;
+          // xQueueSend(pauseDurationQueue, &pauseDuration, portMAX_DELAY);
+          // xSemaphoreGive(videoSemaphore);  // Signal to resume the video
+          //resume the video player task and the draw and decode tasks
+          if(_draw_task && _decodeTask){
+          vTaskResume(_draw_task);
+          vTaskResume(_decodeTask);
+          }
         }
-    
-        //for the audio player task, send a notification to resume the playback
-        uint8_t notif = MP3_RESUME_C;
-        xQueueOverwrite(mp3QueueEvent, &notif);
-        //give a delay to make sure the audio player task has resumed the playback
-        vTaskDelay(20 / portTICK_PERIOD_MS);
-        //wait for the notification from the audio player task
-        while(1){
-        if((xQueueReceive(mp3QueueTransmitt, &notif, portMAX_DELAY))){
-            Serial.println("Resume Task: mp3queue from mp3 task Received: ");
-            Serial.println(notif);
-            if(notif == MP3_RESUME){
-            Serial.println("Audio player task resumed the playback");
-            break;
+        if(!noAudio){
+          //for the audio player task, send a notification to resume the playback
+          uint8_t notif = MP3_RESUME_C;
+          xQueueOverwrite(mp3QueueEvent, &notif);
+          //give a delay to make sure the audio player task has resumed the playback
+          vTaskDelay(20 / portTICK_PERIOD_MS);
+          //wait for the notification from the audio player task
+          while(1){
+            if((xQueueReceive(mp3QueueTransmitt, &notif, portMAX_DELAY))){
+              Serial.println("Resume Task: mp3queue from mp3 task Received: ");
+              Serial.println(notif);
+              if(notif == MP3_RESUME){
+              Serial.println("Audio player task resumed the playback");
+              break;
+              }
+              else{
+              //put the notification back in the queue
+              xQueueOverwrite(mp3QueueEvent, &notif);
+              }
             }
-            else{
-            //put the notification back in the queue
-            xQueueOverwrite(mp3QueueEvent, &notif);
-            }
-        }
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+          vTaskDelay(100 / portTICK_PERIOD_MS);
+          }
         }
 }
 
 // function to control the video playback
 void playVideo(){
-  start_ms = millis();
-  curr_ms = millis();
-  next_frame_ms = start_ms + (++next_frame * 1000 / FPS / 2);
-  while (vFile.available() && mjpeg_read_frame())  // Read video
-  {
-    total_read_video_ms += millis() - curr_ms;
+  if(!noVideo){
+    start_ms = millis();
     curr_ms = millis();
-
-    if (millis() - pauseDuration < next_frame_ms)  // check show frame or skip frame
+    next_frame_ms = start_ms + (++next_frame * 1000 / FPS / 2);
+    while (vFile.available() && mjpeg_read_frame())  // Read video
     {
-      // Play video
-      mjpeg_draw_frame();
-      total_decode_video_ms += millis() - curr_ms;
+      total_read_video_ms += millis() - curr_ms;
       curr_ms = millis();
-    } else {
-      ++skipped_frames;
-      Serial.println("Skip frame");
-    }
 
-    while (millis() - pauseDuration < next_frame_ms) {
-      vTaskDelay(pdMS_TO_TICKS(5));
-    }
+      if (millis() - pauseDuration < next_frame_ms)  // check show frame or skip frame
+      {
+        // Play video
+        mjpeg_draw_frame();
+        total_decode_video_ms += millis() - curr_ms;
+        curr_ms = millis();
+      } else {
+        ++skipped_frames;
+        Serial.println("Skip frame");
+      }
 
-    curr_ms = millis();
-    next_frame_ms = start_ms + (++next_frame * 1000 / FPS);
+      while (millis() - pauseDuration < next_frame_ms) {
+        vTaskDelay(pdMS_TO_TICKS(5));
+      }
+
+      curr_ms = millis();
+      next_frame_ms = start_ms + (++next_frame * 1000 / FPS);
+    }
+    int time_used = millis() - start_ms;
+    int total_frames = next_frame - 1;
   }
-  int time_used = millis() - start_ms;
-  int total_frames = next_frame - 1;
-
+  else{
+    //wait until the MP3 task closes itself
+    uint8_t peekNotif = 55;
+    while(1){
+      if(xQueuePeek(mp3QueueTransmitt, &peekNotif, portMAX_DELAY)){
+        if(peekNotif == MP3_STOP){
+          break;
+        }
+      }
+    }
+  }
   //close the players
-  Serial.println("Video Playing Finished now closing the players");
-  closeVideoPlayer();
-  closeAudioPlayer();
+  Serial.println("Media Playing Finished now closing the player(s)");
+  if(!noVideo){
+    closeVideoPlayer();
+  }
+  if(!noAudio){
+    closeAudioPlayer();
+  }
 }
 
 // Function to play a video file
 bool playVideoWithAudio(int channel) {
+
+  noAudio = false;
+  noVideo = false;
   
   Serial.printf("videoIndex: %d\n", channel);
   char aFilePath[40];
@@ -364,8 +395,9 @@ bool playVideoWithAudio(int channel) {
   aFile = SD.open(aFilePath);
   if (!aFile || aFile.isDirectory()) {
     Serial.printf("ERROR: Failed to open %s file for reading\n", aFilePath);
-    gfx->printf("ERROR: Failed to open %s file for reading\n", aFilePath);
-    return false;
+    //gfx->printf("ERROR: Failed to open %s file for reading\n", aFilePath);
+    noAudio = true;
+    //return false;
   }
 
   char vFilePath[40];
@@ -374,28 +406,33 @@ bool playVideoWithAudio(int channel) {
   vFile = SD.open(vFilePath);
   if (!vFile || vFile.isDirectory()) {
     Serial.printf("ERROR: Failed to open %s file for reading\n", vFilePath);
-    gfx->printf("ERROR: Failed to open %s file for reading\n", vFilePath);
-    return false;
+    //gfx->printf("ERROR: Failed to open %s file for reading\n", vFilePath);
+    noVideo = true;
+    //return false;
+  }
+  
+  if(!noVideo){
+    Serial.println("Init video");
+    mjpeg_setup(&vFile, MJPEG_BUFFER_SIZE, drawMCU, false, DECODEASSIGNCORE, DRAWASSIGNCORE);
   }
 
-  Serial.println("Init video");
+  if(!noAudio){
+    Serial.println("Start play audio task");
+    BaseType_t ret = mp3_player_task_start(&aFile, AUDIOASSIGNCORE);//aac_player_task_start(&aFile, AUDIOASSIGNCORE);
 
-  mjpeg_setup(&vFile, MJPEG_BUFFER_SIZE, drawMCU, false, DECODEASSIGNCORE, DRAWASSIGNCORE);
-
-  Serial.println("Start play audio task");
-
-  BaseType_t ret = mp3_player_task_start(&aFile, AUDIOASSIGNCORE);//aac_player_task_start(&aFile, AUDIOASSIGNCORE);
-
-  if (ret != pdPASS) {
-    Serial.printf("Audio player task start failed: %d\n", ret);
-    gfx->printf("Audio player task start failed: %d\n", ret);
+    if (ret != pdPASS) {
+      Serial.printf("Audio player task start failed: %d\n", ret);
+      gfx->printf("Audio player task start failed: %d\n", ret);
+    }
   }
-
-  Serial.println("Start play video");
+  
+  Serial.println("Start play media");
   playVideo();
 
-  Serial.println("AV end");
-
+  Serial.println("Media end");
+  
+  noAudio = false;
+  noVideo = false;
   return true;
 }
 
@@ -444,8 +481,8 @@ int startVideoPlayerTask(BaseType_t assignedCore, unsigned int index){
     _aFile.close();
     _vFile.close();
 
-    if(!videoExists || !audioExists){
-        Serial.println("Video or Audio File does not exist");
+    if(!videoExists && !audioExists){
+        Serial.println("Video and Audio File does not exist");
         return 2;
     }
     BaseType_t ret = xTaskCreatePinnedToCore(

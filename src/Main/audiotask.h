@@ -16,7 +16,7 @@
 #include "AACDecoderHelix.h"
 #include "MP3DecoderHelix.h"
 
-#define GAIN_LEVEL 0.2
+#define GAIN_LEVEL 0.35
 
 volatile uint8_t taskState = 0;
 TaskHandle_t _mp3_player_task;
