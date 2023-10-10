@@ -90,7 +90,7 @@ void ShowInfo(bool both){
   //print the data for now
   Serial.println("---------------------------");
   Serial.println("SYSTEM INFO");
-  Serial.printf("Uptime: %d\n", batteryEventRcvd.upTime);
+  Serial.printf("Uptime: %d mins %d secs\n", (int)(batteryEventRcvd.upTime/60), (int)(batteryEventRcvd.upTime%60));
   Serial.printf("Percetage: %f\n", batteryEventRcvd.Binfo.cellPercentage);
   Serial.printf("Voltage: %f\n", batteryEventRcvd.Binfo.cellVoltage);
   Serial.printf("Dischage Rate: %f\n", batteryEventRcvd.Binfo.chargeRate);
@@ -107,7 +107,7 @@ void ShowInfo(bool both){
       gfx->printf("Battery: %.2f%%\n", batteryEventRcvd.Binfo.cellPercentage);
       gfx->printf("Voltage: %.2f V\n", batteryEventRcvd.Binfo.cellVoltage);
       gfx->printf("Battery rate: %.4f\n", batteryEventRcvd.Binfo.chargeRate);
-      gfx->printf("Uptime: %d\n", batteryEventRcvd.upTime);
+      gfx->printf("Uptime: %d mins %d secs\n", (int)(batteryEventRcvd.upTime/60), (int)(batteryEventRcvd.upTime%60));
       gfx->printf("\n\nVersion: %s\n", FIRMWARE_VER);
       gfx->printf("Compile Time: %s\nCompile Date: %s\n", COMPILE_TIME, COMPILE_DATE);
   }
