@@ -34,6 +34,9 @@
 /* Battery Management */
 #include "batterytask.h"
 
+/* For retrieving last battery info*/
+#include "saveFlash.h"
+
 //intialize the batteryEvent_t memeber
 batteryEvent_t batteryEventRcvd;
 uint8_t videoState = VIDEO_FINISHED;
@@ -77,6 +80,10 @@ void setup() {
     esp_restart();
     return;
   }
+
+  //retrieve the last battery info
+  initPreferences(&batteryEventRcvd.Binfo, sizeof(batteryEventRcvd.Binfo));
+
   delay(2000);
   Serial.println("System Start");
   myLoop();
@@ -111,6 +118,9 @@ void ShowInfo(bool both){
       gfx->printf("\n\nVersion: %s\n", FIRMWARE_VER);
       gfx->printf("Compile Time: %s\nCompile Date: %s\n", COMPILE_TIME, COMPILE_DATE);
   }
+
+  //update the last battery info into the flash
+  savePreferences(&batteryEventRcvd.Binfo, sizeof(batteryEventRcvd.Binfo));
 }
 
 void myLoop(){

@@ -17,10 +17,10 @@ videoPlaying task:
 TO DO:
 -OTA update
 -Driver for LCD Backlight
--Save Last Battery Info on SD Card
 - detect battery or plugged in mode.
 - prompt user for low battery
 
 DONE
 -Timestamping the firmware -- Done
 -Audio/Video only Playback added (- just videos / audio mode so mp3 or mjpeg only mode) -- Done
+-Added way to retrieve last known battery measurement used preferences(Save Last Battery Info on SD Card) --done
