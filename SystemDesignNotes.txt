@@ -17,4 +17,9 @@ videoPlaying task:
 TO DO:
 
 -OTA update
--Automate the Backlight to allow manual control
+-Driver for LCD Backlight
+-Save Last Battery Info on SD Card
+-Timestamping the firmware
+- just videos / audio mode so mp3 or mjpeg only mode
+- detect battery or plugged in mode.
+- prompt user for low battery

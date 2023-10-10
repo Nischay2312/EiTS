@@ -45,6 +45,11 @@ void setup() {
   WiFi.mode(WIFI_OFF);
   Serial.println("Wifi is off");
 
+  //configure the LCDBKLT pin
+  pinMode(LCDBK, OUTPUT);
+  digitalWrite(LCDBK, HIGH);
+  delay(100);
+
   // Init Display
   gfx->begin(80000000);
   gfx->fillScreen(BLACK);

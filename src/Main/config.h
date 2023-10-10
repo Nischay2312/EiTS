@@ -40,6 +40,7 @@
 
   //Button Pinouts
   #define BUTTON 8
+  #define LCDBK 9
   #else
   //Esp32S3 pinouts
   //ST7735 TFT Display Pinouts
@@ -66,4 +67,5 @@
 
   //Button Pinouts
   #define BUTTON 37
+  #define LCDBK 8
 #endif
