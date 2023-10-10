@@ -88,20 +88,28 @@ void loop() {
 
 void ShowInfo(bool both){
   //print the data for now
+  Serial.println("---------------------------");
+  Serial.println("SYSTEM INFO");
   Serial.printf("Uptime: %d\n", batteryEventRcvd.upTime);
   Serial.printf("Percetage: %f\n", batteryEventRcvd.Binfo.cellPercentage);
   Serial.printf("Voltage: %f\n", batteryEventRcvd.Binfo.cellVoltage);
   Serial.printf("Dischage Rate: %f\n", batteryEventRcvd.Binfo.chargeRate);
+  Serial.printf("Compile Time: %s\nCompile Date: %s\n", COMPILE_TIME, COMPILE_DATE);
+  Serial.printf("Version: %s\n", FIRMWARE_VER);
+  Serial.println("---------------------------");
   if(both){
       gfx->fillRect(0, 0, 160, 128, BLACK);
       gfx->setCursor(0, 0);
       gfx->setTextColor(RED);
       //smaller text size
       gfx->setTextSize(1, 1, 0);
+      gfx->println("SYSTEM INFO");
       gfx->printf("Battery: %.2f%%\n", batteryEventRcvd.Binfo.cellPercentage);
       gfx->printf("Voltage: %.2f V\n", batteryEventRcvd.Binfo.cellVoltage);
       gfx->printf("Battery rate: %.4f\n", batteryEventRcvd.Binfo.chargeRate);
       gfx->printf("Uptime: %d\n", batteryEventRcvd.upTime);
+      gfx->printf("\n\nVersion: %s\n", FIRMWARE_VER);
+      gfx->printf("Compile Time: %s\nCompile Date: %s\n", COMPILE_TIME, COMPILE_DATE);
   }
 }
 

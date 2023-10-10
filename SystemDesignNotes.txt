@@ -19,7 +19,9 @@ TO DO:
 -OTA update
 -Driver for LCD Backlight
 -Save Last Battery Info on SD Card
--Timestamping the firmware
 - just videos / audio mode so mp3 or mjpeg only mode
 - detect battery or plugged in mode.
 - prompt user for low battery
+
+DONE
+-Timestamping the firmware -- Done
