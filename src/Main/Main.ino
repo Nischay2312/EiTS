@@ -137,7 +137,7 @@ void myLoop(){
           break;
         case BUTTON_LONG_PRESSED:
           Serial.println("Long Press received");
-          if(videoState == VIDEO_FINISHED){
+          if(videoState == VIDEO_FINISHED || videoState == VIDEO_PAUSED){
             ShowInfo(1);
           }
           else{

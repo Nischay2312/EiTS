@@ -12,3 +12,9 @@ videoPlaying task:
 -repeats the file
 -checks if received a new queue object which tells whether to play/pause or go to next file.
 
+
+
+TO DO:
+
+-OTA update
+-Automate the Backlight to allow manual control

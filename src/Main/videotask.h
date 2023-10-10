@@ -36,7 +36,8 @@ static xTaskHandle _videoPlayerTask;
 //video event enum
 typedef enum{
     VIDEO_FINISHED,
-    VIDEO_PLAYING
+    VIDEO_PLAYING,
+    VIDEO_PAUSED
 }videoEvent_enum;
 
 //notification enum for the mp3 task
@@ -499,11 +500,15 @@ static void videoControlTask( void *arg){
                     Serial.println("Resuming playback");
                     videoPaused = false;
                     isPlaying = true;
+                    videoEventTx = VIDEO_PLAYING;
+                    xQueueOverwrite(eventQueueMainTx, &videoEventTx);
                     resumePlayback();
                 }
                 else if(isPlaying){
                     Serial.println("Pausing playback");
                     videoPaused = true;
+                    videoEventTx = VIDEO_PAUSED;
+                    xQueueOverwrite(eventQueueMainTx, &videoEventTx);
                     pausePlayback();
                 }
                 // if(isPlaying){
