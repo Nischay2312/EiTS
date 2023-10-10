@@ -23,7 +23,14 @@ typedef struct
   float chargeRate;
 } batteryData;
 
+typedef struct{
+  batteryData Binfo;
+  unsigned long upTime;
+} batteryEvent_t;
+
 static xQueueHandle batteryQueue;
+static xQueueHandle mainLoopEventQueue;
+
 #define BATTERY_QUEUE_SIZE 1
 
 static void batteryTask(void *arg)
@@ -32,7 +39,7 @@ static void batteryTask(void *arg)
     vTaskDelay(1000 / portTICK_PERIOD_MS);
 
     if(!max17048.begin()){
-      delay(1000);
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
       Serial.println("MAX17048 not found!");
       vTaskDelete(NULL);
     }
@@ -68,8 +75,8 @@ static void batteryTask(void *arg)
         // Serial.printf("Battery: %.2f%%\n", data.cellPercentage);
         // Serial.printf("Voltage: %.2f V\n", data.cellVoltage);
         // Serial.printf("Battery rate: %.4f\n", data.chargeRate);
-        //sleep for 5 seconds
-        vTaskDelay(5000 / portTICK_PERIOD_MS);
+        //sleep for 15 seconds
+        vTaskDelay(15000 / portTICK_PERIOD_MS);
     }
 }
 
@@ -80,7 +87,7 @@ int startBatteryTask(BaseType_t assignedCore)
       (const char *const)"Battery Task",
       (const uint32_t)5000,
       (void *const) NULL,
-      (UBaseType_t)1,
+      (UBaseType_t)5,
       (TaskHandle_t *const)NULL,
       (const BaseType_t)assignedCore);
 
@@ -93,12 +100,16 @@ int startBatteryTask(BaseType_t assignedCore)
 }
 
 static void batteryDisplay(void *arg){
+  unsigned long uptime = 0;
   Serial.println("Battery Display task start!");
 
   batteryData Bdata;
-  int ret = startBatteryTask(AUDIOASSIGNCORE);
+  batteryEvent_t eventToSend;
   
-
+  //intialize the queue here
+  mainLoopEventQueue = xQueueCreate(1, sizeof(batteryEvent_t));
+  int ret = startBatteryTask(DECODEASSIGNCORE);
+  
   if(ret != 1){
     Serial.println("Battery Task Failed");
     gfx->println("Battery Task Failed");
@@ -108,39 +119,21 @@ static void batteryDisplay(void *arg){
   while(1){
     //check if there is something in the battery queue
     if(xQueueReceive(batteryQueue, &Bdata, 0)){
-      Serial.println("Trying to suspend tasks");
-      //Suspend the other tasks
-      //vTaskSuspend(_mp3_player_task);
-      if(_draw_task && _decodeTask){
-        vTaskSuspend(_draw_task);
-        vTaskSuspend(_decodeTask);
-      }
+      //send the data to the main loop
 
-      //print the battery data
-      //first make the background black
-      gfx->fillRect(0, 0, 160, 128, BLACK);
-      gfx->setCursor(0, 0);
-      gfx->setTextColor(RED);
-      //smaller text size
-      gfx->setTextSize(1, 1, 0);
-      gfx->printf("Battery: %.2f%%\n", Bdata.cellPercentage);
-      gfx->printf("Voltage: %.2f V\n", Bdata.cellVoltage);
-      gfx->printf("Battery rate: %.4f\n", Bdata.chargeRate);
-      Serial.printf("Battery: %.2f%%\n", Bdata.cellPercentage);
-      Serial.printf("Voltage: %.2f V\n", Bdata.cellVoltage);
-      Serial.printf("Battery rate: %.4f\n", Bdata.chargeRate);
+      //copy the battery data and the uptime and send it to main loop via queue
+      eventToSend.Binfo = Bdata;
+      eventToSend.upTime = uptime;
 
-      vTaskDelay(2500 / portTICK_PERIOD_MS);   
+      xQueueOverwrite(mainLoopEventQueue,&eventToSend);
 
-      //Resume the Tasks
-      //xTaskResumeAll();
-      //vTaskResume(_mp3_player_task);
-      if(_draw_task && _decodeTask){
-        vTaskResume(_draw_task);
-        vTaskResume(_decodeTask);
-      }
+      // Serial.printf("Battery: %.2f%%\n", Bdata.cellPercentage);
+      // Serial.printf("Voltage: %.2f V\n", Bdata.cellVoltage);
+      // Serial.printf("Battery rate: %.4f\n", Bdata.chargeRate);
+
     } 
     vTaskDelay(10000 / portTICK_PERIOD_MS);
+    uptime += 10; //seconds
   }
 }
 
@@ -149,9 +142,9 @@ int startBatteryDisplayTask(BaseType_t assignedCore){
   BaseType_t ret = xTaskCreatePinnedToCore(
     (TaskFunction_t)batteryDisplay,
     (const char *const)"Battery Disp",
-    (const uint32_t)5000,
+    (const uint32_t)20000,
     (void *const)NULL,
-    (UBaseType_t)1,
+    (UBaseType_t)5,
     (TaskHandle_t *const)NULL,
     (const BaseType_t)assignedCore);
 

@@ -22,6 +22,8 @@ uint32_t pauseDuration;
 
 //Queue to get info from the main task
 static xQueueHandle eventQueueMain;
+//Queue to send info to the main task
+static xQueueHandle eventQueueMainTx;
 //Queue to send info to the video Player task
 static xQueueHandle eventQueueVideo;
 //Queue to notify the mp3 task.
@@ -33,7 +35,8 @@ static xTaskHandle _videoPlayerTask;
 
 //video event enum
 typedef enum{
-    VIDEO_FINISHED
+    VIDEO_FINISHED,
+    VIDEO_PLAYING
 }videoEvent_enum;
 
 //notification enum for the mp3 task
@@ -81,6 +84,16 @@ void intializeButtonEventQueue(){
           vTaskDelay(1000 / portTICK_PERIOD_MS);
         };
     }
+    eventQueueMainTx = xQueueCreate(1, sizeof(uint8_t));
+    if (eventQueueMainTx == NULL)
+    {
+        Serial.println("Video Event Transfer to main Queue Creation Failed");
+        while(1){
+          Serial.println("Video event Transfer to main Queue Creation Failed");
+          vTaskDelay(1000 / portTICK_PERIOD_MS);
+        };
+    }
+
 }
 
 // function to initialize the button event queue
@@ -439,7 +452,7 @@ int startVideoPlayerTask(BaseType_t assignedCore, unsigned int index){
       (const char *const)"Video Player Task",
       (const uint32_t)10000,
       (void *const)index,
-      (UBaseType_t)configMAX_PRIORITIES - 1,
+      (UBaseType_t)configMAX_PRIORITIES - 3,
       (TaskHandle_t *const)_videoPlayerTask,
       (const BaseType_t)assignedCore);
 
@@ -460,6 +473,8 @@ static void videoControlTask( void *arg){
     //create a button event object
     buttonData event;
     video_idx = 1;
+
+    uint8_t videoEventTx = 0;
 
     bool isPlaying = false;
     bool videoPaused = false;
@@ -523,6 +538,8 @@ static void videoControlTask( void *arg){
                         //break;
                         esp_restart();
                     }
+                    videoEventTx = VIDEO_PLAYING;
+                    xQueueOverwrite(eventQueueMainTx, &videoEventTx);
                     Serial.println("Playback Start Sucessful");
                 }
                 //vTaskDelay(50 / portTICK_PERIOD_MS);
@@ -570,6 +587,9 @@ static void videoControlTask( void *arg){
                       esp_restart();
                   }
                   Serial.println("switch successful");
+                  videoEventTx = VIDEO_PLAYING;
+                  xQueueOverwrite(eventQueueMainTx, &videoEventTx);
+                  Serial.println("Playback Start Sucessful");
                   //vTaskDelay(50 / portTICK_PERIOD_MS);
                 }
             }
@@ -584,6 +604,8 @@ static void videoControlTask( void *arg){
                     Serial.println("Video playing finished");
                     isPlaying = false;
                     videoPaused = false;
+                    videoEventTx = VIDEO_FINISHED;
+                    xQueueOverwrite(eventQueueMainTx, &videoEventTx);
                     break;
                 default:
                     Serial.println("Unrecognized Video Event");

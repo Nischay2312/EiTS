@@ -174,7 +174,7 @@ bool mjpeg_setup(Stream *input, int32_t mjpegBufSize, JPEG_DRAW_CALLBACK *pfnDra
       (const char *const)"MJPEG decode Task",
       (const uint32_t)2000,
       (void *const)&_pDecodeTask,
-      (UBaseType_t)configMAX_PRIORITIES - 1,
+      (UBaseType_t)configMAX_PRIORITIES - 2,
       (TaskHandle_t *const)&_decodeTask,
       (const BaseType_t)decodeAssignCore);
   xTaskCreatePinnedToCore(

@@ -34,6 +34,10 @@
 /* Battery Management */
 #include "batterytask.h"
 
+//intialize the batteryEvent_t memeber
+batteryEvent_t batteryEventRcvd;
+uint8_t videoState = VIDEO_FINISHED;
+
 void setup() {
   disableCore0WDT();
   Serial.begin(115200);
@@ -77,13 +81,31 @@ void loop() {
   //Dont put code here
 }
 
+void ShowInfo(bool both){
+  //print the data for now
+  Serial.printf("Uptime: %d\n", batteryEventRcvd.upTime);
+  Serial.printf("Percetage: %f\n", batteryEventRcvd.Binfo.cellPercentage);
+  Serial.printf("Voltage: %f\n", batteryEventRcvd.Binfo.cellVoltage);
+  Serial.printf("Dischage Rate: %f\n", batteryEventRcvd.Binfo.chargeRate);
+  if(both){
+      gfx->fillRect(0, 0, 160, 128, BLACK);
+      gfx->setCursor(0, 0);
+      gfx->setTextColor(RED);
+      //smaller text size
+      gfx->setTextSize(1, 1, 0);
+      gfx->printf("Battery: %.2f%%\n", batteryEventRcvd.Binfo.cellPercentage);
+      gfx->printf("Voltage: %.2f V\n", batteryEventRcvd.Binfo.cellVoltage);
+      gfx->printf("Battery rate: %.4f\n", batteryEventRcvd.Binfo.chargeRate);
+      gfx->printf("Uptime: %d\n", batteryEventRcvd.upTime);
+  }
+}
 
 void myLoop(){
   //start the battery reading task
-  // if(startBatteryDisplayTask(AUDIOASSIGNCORE) != 1){
-  //   Serial.println("Battery Display Task Failed");
-  //   gfx->println("Battery Display Task Failed");
-  // }
+  if(startBatteryDisplayTask(AUDIOASSIGNCORE) != 1){
+    Serial.println("Battery Display Task Failed");
+    gfx->println("Battery Display Task Failed");
+  }
 
   if(SetupButton(AUDIOASSIGNCORE) != 1){
     Serial.println("Button Task Failed");
@@ -100,7 +122,7 @@ void myLoop(){
     buttonData receivedData;
     intializeButtonEventQueue();
 
-  gfx->println("Waiting For Input");
+  gfx->println("System Ready\nWaiting For User Input\nSingle Press: Start/Pause\nDouble Press: Skip");
   while(1){
 
     //read data from the button queue
@@ -115,6 +137,12 @@ void myLoop(){
           break;
         case BUTTON_LONG_PRESSED:
           Serial.println("Long Press received");
+          if(videoState == VIDEO_FINISHED){
+            ShowInfo(1);
+          }
+          else{
+            Serial.println("Video is not paused so not showing info");
+          }
           break;
         case BUTTON_DOUBLE_PRESSED:
           Serial.println("Double Press received");
@@ -126,22 +154,28 @@ void myLoop(){
       }
       Serial.println("----------------");
     }
+    
+    if(xQueueReceive(mainLoopEventQueue, &batteryEventRcvd, 0)){
+      //battery info read
+      //check if video is not being played
+      // if(xQueueReceive(eventQueueMainTx, &videoState, 0)){
+      //   if(videoState == VIDEO_PAUSED){
+      //     // //print the data for now
+      //     // Serial.printf("Uptime: %d\n", batteryEventRcvd.upTime);
+      //     // Serial.printf("Percetage: %f\n", batteryEventRcvd.Binfo.cellPercentage);
+      //     // Serial.printf("Voltage: %f\n", batteryEventRcvd.Binfo.cellVoltage);
+      //     // Serial.printf("Dischage Rate: %f\n", batteryEventRcvd.Binfo.chargeRate);
+      //     //ShowInfo();
+      //   }
+
+      }
+    if(xQueueReceive(eventQueueMainTx, &videoState, 0)){
+      //Video State Read
+      //push back the state into it for reading it next time
+      //xQueueOverwrite(eventQueueMainTx, &videoState);
+    }
+
     vTaskDelay(100 / portTICK_PERIOD_MS);
-    // if(xQueueReceive(eventQueueMain, &receivedData, 0)){
-    //   switch(receivedData.Type){
-    //     case RESTARTME:
-    //        Serial.println("Restarting Video Player Task");
-    //        if(startVideoControlTask(AUDIOASSIGNCORE) != 1){
-    //           Serial.println("Video Control Task Failed");
-    //           gfx->println("Video Control Task Failed");
-    //        }
-    //        break;
-    //     default:
-    //       Serial.println("Un recognized input, putting it back in.");
-    //       xQueueOverwrite(eventQueueMain, &receivedData);
-    //       break;
-    //   }
-    // }
   }
 
   Serial.println("Restarting");
