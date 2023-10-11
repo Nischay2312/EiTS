@@ -3,6 +3,7 @@ TO DO:
 - Driver for LCD Backlight and Probably a MOSFET to EN battery volt.
 - Detect battery or plugged in mode.
 - Prompt user when low battery
+- Script to automate python building process for the EXEs 
 
 DONE
 -Timestamping the firmware -- Done (oct 10th, 2023)
