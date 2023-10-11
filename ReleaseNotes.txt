@@ -1,14 +1,30 @@
 ----------------------------------------------------
-v0.11_pre_release : October 10th, 2023
+v0.12_pre_release : October 11th, 2023
+------------------------------------------
+- No firmware change (it is still v0.11_pre_release)
+- Added functionality to easily convert the Videos into required format.
+- Instructions in "How to Make Videos.txt"
 ----------------------------------------------------
+.
+.
+.
+----------------------------------------------------
+v0.11_pre_release : October 10th, 2023
+------------------------------------------
 - Stores the last known battery reading in the SPIFFS
 ----------------------------------------------------
-
+.
+.
+.
 ----------------------------------------------------
 v0.1_pre_release : October 10th, 2023
-----------------------------------------------------
+------------------------------------------
 -mp3, mjpeg, and both playback
 -play, pause and skip option
 -battery management
 -stamp for Compile time and date
 ----------------------------------------------------
+.
+.
+.
+Devlepoment started October 2nd, but regular tracking done later :(

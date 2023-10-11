@@ -1,0 +1,29 @@
+You need FFMPEG to convert the videos.
+Get it from here: https://ffmpeg.org/download.html
+
+Use these commands in ffmpeg:
+ffmpeg -i input.mp4 -ar 44100 -ac 1 -q:a 9 media.mp3
+ffmpeg -i input.mp4 -vf "fps=24,scale=160:128:flags=lanczos" -q:v 9 media.mjpeg
+
+Replace the "input.mp4" with you file name. To execute this you either need to be in the bin folder for ffmpeg, or have it in you PATH environmemt.
+
+
+To make you life easier, I have made .EXE files with GUI to help you do this. WINDOWS ONLY
+
+1. In the deploy folder, open the executables folder.
+
+2. If FFMPEG is never used before, then download it. Use the link above. Remember where you download it and extract the archive. 
+
+3. Now run the "setup_ffmpeg.bat" script to "install" ffmpeg in you system PATH. If ffmpeg is already on you path then skip. The script will ask you the location of the bin folder. There is a bin folder in the ffmpeg directory.
+
+4. To check if ffmpeg is in you path, or to see if the above was successful, open a CMD prompt anywhere. and type this: "ffmpeg -version". You should get something about ffmpeg version. If ffmpeg is not in ypu path, then you will get an error most likey saying "'ffmpeg' is not recognized as an internal or external command,
+operable program or batch file.". If this is the case even after running the script, then please feel free to contact me. Info at the bottom.
+
+5. Once ffmpeg is "installed" simply run the "ConvertVideos.exe" file to convert your videos. Follow the standard naming format for the files.
+
+6. ENJOY!!
+
+
+
+Contact Info: 
+email: nischayjosi2312@gmail.com

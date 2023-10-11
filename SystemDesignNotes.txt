@@ -1,3 +1,19 @@
+TO DO:
+- OTA update
+- Driver for LCD Backlight and Probably a MOSFET to EN battery volt.
+- Detect battery or plugged in mode.
+- Prompt user when low battery
+
+DONE
+-Timestamping the firmware -- Done (oct 10th, 2023)
+-Audio/Video only Playback added (- just videos / audio mode so mp3 or mjpeg only mode) -- Done (oct 10th, 2023)
+-Added way to retrieve last known battery measurement used preferences(Save Last Battery Info on SD Card) -- Done (oct 10th, 2023)
+-Automate Video file conversion with GUI and make an EXE -- Done
+
+
+
+
+-------------------DESIGN NOTES--------------------------
 main task:
 -manages the other tasks : button info, battery management and video playing.
 -button inputs: single tap: start/stop the video file. 
@@ -11,16 +27,3 @@ videoPlaying task:
 -manages mjpeg play and mp3 play
 -repeats the file
 -checks if received a new queue object which tells whether to play/pause or go to next file.
-
-
-
-TO DO:
--OTA update
--Driver for LCD Backlight
-- detect battery or plugged in mode.
-- prompt user for low battery
-
-DONE
--Timestamping the firmware -- Done
--Audio/Video only Playback added (- just videos / audio mode so mp3 or mjpeg only mode) -- Done
--Added way to retrieve last known battery measurement used preferences(Save Last Battery Info on SD Card) --done
