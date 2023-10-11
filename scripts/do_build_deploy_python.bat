@@ -6,8 +6,8 @@ CONVERTVIDEOS_DIR="../python/convertVideos"
 FFMPEG2PATH_DIR="../python/ffmpeg2path"
 
 # Convert Python scripts to EXEs using PyInstaller
-# pyinstaller --onefile "$CONVERTVIDEOS_DIR/convertvideos.py"
-# pyinstaller --onefile "$FFMPEG2PATH_DIR/select_ffmpeg_folder.py"
+pyinstaller --onefile "$CONVERTVIDEOS_DIR/convertvideos.py"
+pyinstaller --onefile "$FFMPEG2PATH_DIR/select_ffmpeg_folder.py"
 
 # Copy the generated EXEs to the deploy directory
 cp "$CONVERTVIDEOS_DIR/dist/convertVideos.exe" "$DEPLOY_DIR"

@@ -10,7 +10,7 @@ FFMPEG2PATH_DIR="../python/ffmpeg2path"
 # pyinstaller --onefile "$FFMPEG2PATH_DIR/select_ffmpeg_folder.py"
 
 # Copy the generated EXEs to the deploy directory
-cp "$CONVERVIDEOS_DIR/dist/convertVideos.exe" "$DEPLOY_DIR"
+cp "$CONVERTVIDEOS_DIR/dist/convertVideos.exe" "$DEPLOY_DIR"
 cp "$FFMPEG2PATH_DIR/dist/select_ffmpeg_folder.exe" "$DEPLOY_DIR"
 
 # Copy the setup_ffmpeg.bat to the deploy directory
