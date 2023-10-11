@@ -3,9 +3,11 @@ TO DO:
 - Driver for LCD Backlight and Probably a MOSFET to EN battery volt.
 - Detect battery or plugged in mode.
 - Prompt user when low battery
-- Script to automate python building process for the EXEs 
+- Force overwrite ffmpeg in ConvertVideos program.
+- Low priority, Add CLI to build the Arduino project
 
 DONE
+-Script to automate python building process for the EXEs -- Done (October 11th, 2023) 
 -Timestamping the firmware -- Done (oct 10th, 2023)
 -Audio/Video only Playback added (- just videos / audio mode so mp3 or mjpeg only mode) -- Done (oct 10th, 2023)
 -Added way to retrieve last known battery measurement used preferences(Save Last Battery Info on SD Card) -- Done (oct 10th, 2023)
