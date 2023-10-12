@@ -13,6 +13,7 @@
 // /////////////////////////////////////////////////////////////////
 
 #include "Adafruit_MAX1704X.h"
+// #include <esp_deep_sleep.h>
 
 Adafruit_MAX17048 max17048;
 
@@ -26,12 +27,23 @@ typedef struct
 typedef struct{
   batteryData Binfo;
   unsigned long upTime;
+  bool pluggedIn;
 } batteryEvent_t;
 
 static xQueueHandle batteryQueue;
 static xQueueHandle mainLoopEventQueue;
 
 #define BATTERY_QUEUE_SIZE 1
+
+//function to put the esp to sleep puts it in hibernate mode, claims to consume sub 10uA
+void putEspToSleep(){
+  //put the esp to sleep
+  digitalWrite(BATEN, LOW);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
+  esp_deep_sleep_start();
+}
 
 static void batteryTask(void *arg)
 {
@@ -65,6 +77,7 @@ static void batteryTask(void *arg)
         data.cellPercentage = max17048.cellPercent();
         data.cellVoltage = max17048.cellVoltage();
         data.chargeRate = max17048.chargeRate();
+        
         //send it over through the queue
         if(BATTERY_QUEUE_SIZE == 1){
             xQueueOverwrite(batteryQueue, &data);
@@ -75,8 +88,8 @@ static void batteryTask(void *arg)
         // Serial.printf("Battery: %.2f%%\n", data.cellPercentage);
         // Serial.printf("Voltage: %.2f V\n", data.cellVoltage);
         // Serial.printf("Battery rate: %.4f\n", data.chargeRate);
-        //sleep for 15 seconds
-        vTaskDelay(15000 / portTICK_PERIOD_MS);
+        //sleep for 1 seconds
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
 
@@ -125,6 +138,14 @@ static void batteryDisplay(void *arg){
       eventToSend.Binfo = Bdata;
       eventToSend.upTime = uptime;
 
+      //check if the battery is plugged in
+        if(Bdata.chargeRate >= PLUGGED_IN_THRESHOLD){
+          eventToSend.pluggedIn = true;
+        }
+        else{
+          eventToSend.pluggedIn = false;
+        }
+
       xQueueOverwrite(mainLoopEventQueue,&eventToSend);
 
       // Serial.printf("Battery: %.2f%%\n", Bdata.cellPercentage);
@@ -132,8 +153,9 @@ static void batteryDisplay(void *arg){
       // Serial.printf("Battery rate: %.4f\n", Bdata.chargeRate);
 
     } 
-    vTaskDelay(10000 / portTICK_PERIOD_MS);
-    uptime += 10; //seconds
+    uint8_t time_wait = 2;
+    vTaskDelay(time_wait * 1000 / portTICK_PERIOD_MS);
+    uptime += time_wait; //seconds
   }
 }
 

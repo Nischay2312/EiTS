@@ -22,3 +22,9 @@
 #define AAC_FILENAME "/test.aac"
 #define MP3_FILENAME "/test.mp3"
 #define MJPEG_FILENAME "/test.mjpeg"
+
+
+//Battery Metric
+#define BATTERY_LOW 4.1
+#define LOW_BATTERY_COUNTDOWN 60 //seconds
+#define PLUGGED_IN_THRESHOLD -2.0

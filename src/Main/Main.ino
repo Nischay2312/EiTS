@@ -110,6 +110,7 @@ void ShowInfo(bool both){
   Serial.printf("Percetage: %f\n", batteryEventRcvd.Binfo.cellPercentage);
   Serial.printf("Voltage: %f\n", batteryEventRcvd.Binfo.cellVoltage);
   Serial.printf("Dischage Rate: %f\n", batteryEventRcvd.Binfo.chargeRate);
+  Serial.printf("State: %s\n", batteryEventRcvd.pluggedIn ? "Charging" : "Not Charging");
   Serial.printf("Audio Gain: %f\n", audioGain);
   Serial.printf("Compile Time: %s\nCompile Date: %s\n", COMPILE_TIME, COMPILE_DATE);
   Serial.printf("Version: %s\n", FIRMWARE_VER);
@@ -125,6 +126,7 @@ void ShowInfo(bool both){
       gfx->printf("Voltage: %.2f V\n", batteryEventRcvd.Binfo.cellVoltage);
       gfx->printf("Battery rate: %.4f\n", batteryEventRcvd.Binfo.chargeRate);
       gfx->printf("Uptime: %d mins %d secs\n", (int)(batteryEventRcvd.upTime/60), (int)(batteryEventRcvd.upTime%60));
+      gfx->printf("State: %s\n", batteryEventRcvd.pluggedIn ? "Charging" : "Not Charging");
       gfx->printf("\n\nVersion: %s\n", FIRMWARE_VER);
       gfx->printf("Compile Time: %s\nCompile Date: %s\n", COMPILE_TIME, COMPILE_DATE);
       gfx->printf("\n\nAudio Gain: %f\n", audioGain);
@@ -132,6 +134,20 @@ void ShowInfo(bool both){
 
   //update the last battery info into the flash
   savePreferences(&batteryEventRcvd.Binfo, sizeof(batteryEventRcvd.Binfo));
+}
+
+void ShowLowBattery(){
+  gfx->fillRect(0, 0, 160, 128, BLACK);
+  gfx->setCursor(0, 0);
+  gfx->setTextColor(RED);
+  //smaller text size
+  gfx->setTextSize(1, 1, 0);
+  gfx->printf("Playback Has Stoppef\nBattery Critically Low\nPlease Charge the Battery or connect USB\nSystem will shutdown in %d seconds\n", LOW_BATTERY_COUNTDOWN);
+  gfx->printf("Battery: %.2f%%\n", batteryEventRcvd.Binfo.cellPercentage);
+  gfx->printf("Voltage: %.2f V\n", batteryEventRcvd.Binfo.cellVoltage);
+  gfx->printf("Battery rate: %.4f\n", batteryEventRcvd.Binfo.chargeRate);
+
+
 }
 
 void myLoop(){
@@ -191,18 +207,41 @@ void myLoop(){
     
     if(xQueueReceive(mainLoopEventQueue, &batteryEventRcvd, 0)){
       //battery info read
-      //check if video is not being played
-      // if(xQueueReceive(eventQueueMainTx, &videoState, 0)){
-      //   if(videoState == VIDEO_PAUSED){
-      //     // //print the data for now
-      //     // Serial.printf("Uptime: %d\n", batteryEventRcvd.upTime);
-      //     // Serial.printf("Percetage: %f\n", batteryEventRcvd.Binfo.cellPercentage);
-      //     // Serial.printf("Voltage: %f\n", batteryEventRcvd.Binfo.cellVoltage);
-      //     // Serial.printf("Dischage Rate: %f\n", batteryEventRcvd.Binfo.chargeRate);
-      //     //ShowInfo();
-      //   }
-
+      //If our battery voltage is less than BATTERY_LOW_LIMIT then we stop the playback and prompt the user to charge tha battery.
+      if(/*(!batteryEventRcvd.pluggedIn) &&*/ batteryEventRcvd.Binfo.cellVoltage <= BATTERY_LOW){
+        //check if the up time is greater then 30 seconds
+        if(batteryEventRcvd.upTime > 40){
+          //stop the playback if it is playing
+          if(videoState == VIDEO_PLAYING){
+            //send the stop command to the video control task
+            buttonData stopCommand;
+            stopCommand.Type = BUTTON_PRESSED;
+            xQueueOverwrite(eventQueueMain, &stopCommand);
+            //wait for the video to stop
+            while(videoState != VIDEO_FINISHED || videoState != VIDEO_PAUSED){
+              xQueueReceive(eventQueueMainTx, &videoState, 0);
+              vTaskDelay(100 / portTICK_PERIOD_MS);
+            }
+          }
+          //Now display LOW BATTERY MESSAGE
+          ShowLowBattery();
+          //countdown till 2 minutes and then disable the battery
+          for(int i = 0; i < LOW_BATTERY_COUNTDOWN; i++){
+            xQueueReceive(mainLoopEventQueue, &batteryEventRcvd, 0);
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+            //if the battery is plugged in then break
+            if(batteryEventRcvd.pluggedIn){
+              ShowInfo(1);
+              break;
+            }
+          }
+          //disable the battery
+          if(!batteryEventRcvd.pluggedIn){
+            putEspToSleep();
+          }
+        }
       }
+    }
     if(xQueueReceive(eventQueueMainTx, &videoState, 0)){
       //Video State Read
       //push back the state into it for reading it next time

@@ -2,6 +2,9 @@ TO DO:
 - OTA update
 - Detect battery or plugged in mode.
 - Prompt user when low battery
+- make a visual representation of battery based on the percentage
+- when audio only mode, display the file name on screen
+- Design 3d printed Case -- URGENT
 - Low priority, Add CLI to build the Arduino project
 
 DONE
@@ -30,3 +33,7 @@ videoPlaying task:
 -manages mjpeg play and mp3 play
 -repeats the file
 -checks if received a new queue object which tells whether to play/pause or go to next file.
+
+
+-transfering data from the video player task
+make a structure and let it contain the values
