@@ -94,12 +94,12 @@ class VideoConverterApp:
                 output_video = os.path.join(current_folder, f"{output_name}.mjpeg")
 
                 try:
-                    process = subprocess.Popen(['ffmpeg', '-i', input_file, '-ar', '44100', '-ac', '1', '-q:a', '9', output_audio], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+                    process = subprocess.Popen(['ffmpeg', '-i', input_file, '-y', '-ar', '44100', '-ac', '1', '-q:a', '9', output_audio], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
                     for line in process.stdout:
                         self.console.insert(tk.END, line)
                         self.console.see(tk.END)  # Auto-scrolling
                     
-                    process = subprocess.Popen(['ffmpeg', '-i', input_file, '-vf', 'fps=24,scale=160:128:flags=lanczos', '-q:v', '9', output_video], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+                    process = subprocess.Popen(['ffmpeg', '-i', input_file, '-y', '-vf', 'fps=24,scale=160:128:flags=lanczos', '-q:v', '9', output_video], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
                     for line in process.stdout:
                         self.console.insert(tk.END, line)
                         self.console.see(tk.END)  # Auto-scrolling

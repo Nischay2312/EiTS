@@ -1,5 +1,5 @@
 ('C:\\Users\\nisch\\OneDrive - '
- 'UBC\\UBC_UAS\\2023\\EiTS\\Deploy\\Workspace\\build\\select_ffmpeg_folder\\PYZ-00.pyz',
+ 'UBC\\UBC_UAS\\2023\\EiTS\\python\\ffmpeg2path\\build\\select_ffmpeg_folder\\PYZ-00.pyz',
  [('_compat_pickle',
    'C:\\Users\\nisch\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\_compat_pickle.py',
    'PYMODULE'),

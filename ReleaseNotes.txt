@@ -6,6 +6,8 @@ v0.13_pre_release : October 11th, 2023
 -- Enable Signal Pin control
 - Hardware Changes:
 -- Added MOSFET Load Switch to control the Battery Supply Voltage
+- Automation Changes:
+-- Fixed the do_build_deploy_python.bat script to correctly work with relative paths.
 ----------------------------------------------------
 .
 .

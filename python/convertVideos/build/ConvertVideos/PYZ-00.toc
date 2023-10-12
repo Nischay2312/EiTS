@@ -1,5 +1,5 @@
 ('C:\\Users\\nisch\\OneDrive - '
- 'UBC\\UBC_UAS\\2023\\EiTS\\deploy\\Workspace\\convertVideos\\build\\ConvertVideos\\PYZ-00.pyz',
+ 'UBC\\UBC_UAS\\2023\\EiTS\\python\\convertVideos\\build\\convertvideos\\PYZ-00.pyz',
  [('_compat_pickle',
    'C:\\Users\\nisch\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\_compat_pickle.py',
    'PYMODULE'),
