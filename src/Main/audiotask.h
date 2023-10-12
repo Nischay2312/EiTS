@@ -16,7 +16,7 @@
 #include "AACDecoderHelix.h"
 #include "MP3DecoderHelix.h"
 
-#define GAIN_LEVEL 0.35
+#define AUDIO_GAIN_DEFAULT 0.35  // default audio gain incase SD card not has it.
 
 volatile uint8_t taskState = 0;
 TaskHandle_t _mp3_player_task;
@@ -25,6 +25,49 @@ TaskHandle_t _aac_player_task;
 static unsigned long total_read_audio_ms = 0;
 static unsigned long total_decode_audio_ms = 0;
 static unsigned long total_play_audio_ms = 0;
+
+float audioGain;
+
+// function to read the gain stored in the SD Card
+float getGain() {
+    Serial.println("Opening file...");
+
+    File gainFile = SD.open(AUDIO_GAIN_FILE_PATH, FILE_READ);
+
+    if (!gainFile) {
+        Serial.println("Failed to open file!");
+        return AUDIO_GAIN_DEFAULT;
+    }
+
+    char gainStr[10];  // Assuming the gain won't exceed 9 characters including the dot
+    int bytesRead = gainFile.read((uint8_t *)gainStr, sizeof(gainStr) - 1);  // Leave space for null terminator
+
+    gainFile.close();
+
+    if (bytesRead <= 0) {
+        Serial.println("Failed to read data or file empty!");
+        return AUDIO_GAIN_DEFAULT;
+    }
+
+    gainStr[bytesRead] = '\0';  // Null-terminate the string
+
+    Serial.print("Read gain string: ");
+    Serial.println(gainStr);
+
+    float gain = atof(gainStr); // Convert string to float
+
+    Serial.print("Converted gain value: ");
+    Serial.println(gain, 4);  // Print up to 4 decimal places
+
+    // Check the gain bounds
+    if (gain < 0.0 || gain > 1.0) {
+        Serial.println("Gain out of bounds!");
+        return AUDIO_GAIN_DEFAULT;
+    }
+
+    return gain;
+}
+
 
 static i2s_port_t _i2s_num;
 static esp_err_t i2s_init(i2s_port_t i2s_num, uint32_t sample_rate,
@@ -81,7 +124,7 @@ static void aacAudioDataCallback(AACFrameInfo &info, int16_t *pwm_buffer, size_t
   size_t i2s_bytes_written = 0;
   for (int i = 0; i < len; i++)
   {
-    pwm_buffer[i] = pwm_buffer[i] * GAIN_LEVEL;
+    pwm_buffer[i] = pwm_buffer[i] * audioGain;
   }
   i2s_write(_i2s_num, pwm_buffer, len * 2, &i2s_bytes_written, portMAX_DELAY);
   // log_i("len: %d, i2s_bytes_written: %d", len, i2s_bytes_written);
@@ -100,7 +143,7 @@ static void mp3AudioDataCallback(MP3FrameInfo &info, int16_t *pwm_buffer, size_t
   size_t i2s_bytes_written = 0;
   for (int i = 0; i < len; i++)
   {
-    pwm_buffer[i] = pwm_buffer[i] * GAIN_LEVEL;
+    pwm_buffer[i] = pwm_buffer[i] * audioGain;
   }
   i2s_write(_i2s_num, pwm_buffer, len * 2, &i2s_bytes_written, portMAX_DELAY);
   // log_i("len: %d, i2s_bytes_written: %d", len, i2s_bytes_written);

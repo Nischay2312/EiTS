@@ -13,12 +13,12 @@
 // /////////////////////////////////////////////////////////////////
 #define COMPILE_TIME __TIME__
 #define COMPILE_DATE __DATE__
-#define FIRMWARE_VER "v0.11_pre_release"
+#define FIRMWARE_VER "v0.12_pre_release"
 
 #define APP_NAME "video_player"
-#define K_VIDEO_INDEX "video_index"
+
+#define AUDIO_GAIN_FILE_PATH "/Config/AudioGain.txt"
 #define BASE_PATH "/Videos/"
 #define AAC_FILENAME "/test.aac"
 #define MP3_FILENAME "/test.mp3"
 #define MJPEG_FILENAME "/test.mjpeg"
-#define VIDEO_COUNT 20

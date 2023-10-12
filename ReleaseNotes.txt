@@ -1,4 +1,16 @@
 ----------------------------------------------------
+v0.13_pre_release : October 11th, 2023
+------------------------------------------
+- Firmware Changes:
+-- Added Configurable Audio Gain form SD Card
+-- Enable Signal Pin control
+- Hardware Changes:
+-- Added MOSFET Load Switch to control the Battery Supply Voltage
+----------------------------------------------------
+.
+.
+.
+----------------------------------------------------
 v0.12_pre_release : October 11th, 2023
 ------------------------------------------
 - No firmware change (it is still v0.11_pre_release)

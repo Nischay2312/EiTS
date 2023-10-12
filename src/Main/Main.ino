@@ -42,12 +42,17 @@ batteryEvent_t batteryEventRcvd;
 uint8_t videoState = VIDEO_FINISHED;
 
 void setup() {
+  //configure the Battery Enable pin
+  pinMode(BATEN, OUTPUT);
+  digitalWrite(BATEN, HIGH);
+  delay(1000);
+
   disableCore0WDT();
   Serial.begin(115200);
 
   WiFi.mode(WIFI_OFF);
   Serial.println("Wifi is off");
-
+  
   //configure the LCDBKLT pin
   pinMode(LCDBK, OUTPUT);
   digitalWrite(LCDBK, HIGH);
@@ -68,6 +73,9 @@ void setup() {
     return;
   }
   i2s_zero_dma_buffer(I2S_NUM_0);
+
+  //Get the audio gain
+  audioGain = getGain();
 
   Serial.println("Init FS");
 
@@ -95,12 +103,14 @@ void loop() {
 
 void ShowInfo(bool both){
   //print the data for now
+  audioGain = getGain();
   Serial.println("---------------------------");
   Serial.println("SYSTEM INFO");
   Serial.printf("Uptime: %d mins %d secs\n", (int)(batteryEventRcvd.upTime/60), (int)(batteryEventRcvd.upTime%60));
   Serial.printf("Percetage: %f\n", batteryEventRcvd.Binfo.cellPercentage);
   Serial.printf("Voltage: %f\n", batteryEventRcvd.Binfo.cellVoltage);
   Serial.printf("Dischage Rate: %f\n", batteryEventRcvd.Binfo.chargeRate);
+  Serial.printf("Audio Gain: %f\n", audioGain);
   Serial.printf("Compile Time: %s\nCompile Date: %s\n", COMPILE_TIME, COMPILE_DATE);
   Serial.printf("Version: %s\n", FIRMWARE_VER);
   Serial.println("---------------------------");
@@ -117,6 +127,7 @@ void ShowInfo(bool both){
       gfx->printf("Uptime: %d mins %d secs\n", (int)(batteryEventRcvd.upTime/60), (int)(batteryEventRcvd.upTime%60));
       gfx->printf("\n\nVersion: %s\n", FIRMWARE_VER);
       gfx->printf("Compile Time: %s\nCompile Date: %s\n", COMPILE_TIME, COMPILE_DATE);
+      gfx->printf("\n\nAudio Gain: %f\n", audioGain);
   }
 
   //update the last battery info into the flash
