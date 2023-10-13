@@ -34,11 +34,14 @@
 /* Battery Management */
 #include "batterytask.h"
 
-/* For retrieving last battery info*/
+/* For retrieving last battery info */
 #include "saveFlash.h"
 
-/* For rendering graphics*/
+/* For rendering graphics */
 #include "graphics.h"
+
+/* For OTA */
+#include "ota.h"
 
 //intialize the batteryEvent_t memeber
 batteryEvent_t batteryEventRcvd;
@@ -46,13 +49,15 @@ videoEvent_t videoState;
 //videoState = VIDEO_FINISHED;
 
 void setup() {
+  disableCore0WDT();
+  Serial.begin(115200);
+
+  checkOTA();
+
   //configure the Battery Enable pin
   pinMode(BATEN, OUTPUT);
   digitalWrite(BATEN, HIGH);
   delay(1000);
-
-  disableCore0WDT();
-  Serial.begin(115200);
 
   WiFi.mode(WIFI_OFF);
   Serial.println("Wifi is off");
@@ -96,7 +101,7 @@ void setup() {
   //retrieve the last battery info
   initPreferences(&batteryEventRcvd.Binfo, sizeof(batteryEventRcvd.Binfo));
 
-  delay(2000);
+  //delay(2000);
   Serial.println("System Start");
   myLoop();
 }
