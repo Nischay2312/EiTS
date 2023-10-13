@@ -1,13 +1,13 @@
 TO DO:
 - OTA update
-- Detect battery or plugged in mode.
-- Prompt user when low battery
-- make a visual representation of battery based on the percentage
 - when audio only mode, display the file name on screen
 - Design 3d printed Case -- URGENT
 - Low priority, Add CLI to build the Arduino project
 
 DONE
+- Detect battery or plugged in mode.																 	-- Done (October 12th, 2023)
+- Prompt user when low battery																		-- Done (October 12th, 2023)
+- make a visual representation of battery based on the percentage													-- Done (October 12th, 2023)
 - Force overwrite ffmpeg in ConvertVideos program. 															-- Done (October 11th, 2023)
 - Driver for LCD Backlight and Probably a MOSFET to EN battery volt. 													-- Done (October 11th, 2023)
 - Script to automate python building process for the EXEs 														-- Done (October 11th, 2023) 

@@ -127,7 +127,7 @@ static void batteryDisplay(void *arg){
     Serial.println("Battery Task Failed");
     gfx->println("Battery Task Failed");
   }
-  vTaskDelay(10000 / portTICK_PERIOD_MS);
+  vTaskDelay(5000 / portTICK_PERIOD_MS);
   Serial.println("Entering While Loop!");
   while(1){
     //check if there is something in the battery queue

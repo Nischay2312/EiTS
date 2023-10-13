@@ -1,4 +1,18 @@
 ----------------------------------------------------
+v0.14_pre_release : October 12th, 2023
+------------------------------------------
+- Firmware Changes:
+-- Low Battery Alert and USB Plug in detection
+-- Added Battery Icon with Percentage and Charging Status
+- Hardware Changes:
+-- Added MOSFET Load Switch to control the Battery Supply Voltage
+- Automation Changes:
+-- Fixed the do_build_deploy_python.bat script to correctly work with relative paths.
+----------------------------------------------------
+.
+.
+.
+----------------------------------------------------
 v0.13_pre_release : October 11th, 2023
 ------------------------------------------
 - Firmware Changes:

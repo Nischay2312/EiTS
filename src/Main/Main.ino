@@ -37,9 +37,13 @@
 /* For retrieving last battery info*/
 #include "saveFlash.h"
 
+/* For rendering graphics*/
+#include "graphics.h"
+
 //intialize the batteryEvent_t memeber
 batteryEvent_t batteryEventRcvd;
-uint8_t videoState = VIDEO_FINISHED;
+videoEvent_t videoState;
+//videoState = VIDEO_FINISHED;
 
 void setup() {
   //configure the Battery Enable pin
@@ -118,7 +122,7 @@ void ShowInfo(bool both){
   if(both){
       gfx->fillRect(0, 0, 160, 128, BLACK);
       gfx->setCursor(0, 0);
-      gfx->setTextColor(RED);
+      gfx->setTextColor(WHITE);
       //smaller text size
       gfx->setTextSize(1, 1, 0);
       gfx->println("SYSTEM INFO");
@@ -127,9 +131,13 @@ void ShowInfo(bool both){
       gfx->printf("Battery rate: %.4f\n", batteryEventRcvd.Binfo.chargeRate);
       gfx->printf("Uptime: %d mins %d secs\n", (int)(batteryEventRcvd.upTime/60), (int)(batteryEventRcvd.upTime%60));
       gfx->printf("State: %s\n", batteryEventRcvd.pluggedIn ? "Charging" : "Not Charging");
-      gfx->printf("\n\nVersion: %s\n", FIRMWARE_VER);
+      gfx->printf("Version: %s\n", FIRMWARE_VER);
       gfx->printf("Compile Time: %s\nCompile Date: %s\n", COMPILE_TIME, COMPILE_DATE);
-      gfx->printf("\n\nAudio Gain: %f\n", audioGain);
+      gfx->printf("\n\n\n\nAudio Gain: %f\n", audioGain);
+      
+
+      //call the draw battery icon function
+      drawBatteryIcon(111, 84, batteryEventRcvd.Binfo.cellPercentage, batteryEventRcvd.pluggedIn);
   }
 
   //update the last battery info into the flash
@@ -139,15 +147,13 @@ void ShowInfo(bool both){
 void ShowLowBattery(){
   gfx->fillRect(0, 0, 160, 128, BLACK);
   gfx->setCursor(0, 0);
-  gfx->setTextColor(RED);
+  gfx->setTextColor(WHITE);
   //smaller text size
   gfx->setTextSize(1, 1, 0);
-  gfx->printf("Playback Has Stoppef\nBattery Critically Low\nPlease Charge the Battery or connect USB\nSystem will shutdown in %d seconds\n", LOW_BATTERY_COUNTDOWN);
+  gfx->printf("Playback Has Stopped\nBattery Critically Low\nPlease Charge the Battery or connect USB Cable\nSystem will shutdown in %d seconds\n", LOW_BATTERY_COUNTDOWN);
   gfx->printf("Battery: %.2f%%\n", batteryEventRcvd.Binfo.cellPercentage);
   gfx->printf("Voltage: %.2f V\n", batteryEventRcvd.Binfo.cellVoltage);
   gfx->printf("Battery rate: %.4f\n", batteryEventRcvd.Binfo.chargeRate);
-
-
 }
 
 void myLoop(){
@@ -171,6 +177,8 @@ void myLoop(){
   //initialize the video control event queue
     buttonData receivedData;
     intializeButtonEventQueue();
+    videoState.videoEventTx = VIDEO_FINISHED;
+    videoState.vidIdx = 0;
 
   gfx->println("System Ready\nWaiting For User Input\nSingle Press: Start/Pause\nDouble Press: Skip");
   while(1){
@@ -187,7 +195,7 @@ void myLoop(){
           break;
         case BUTTON_LONG_PRESSED:
           Serial.println("Long Press received");
-          if(videoState == VIDEO_FINISHED || videoState == VIDEO_PAUSED){
+          if(videoState.videoEventTx == VIDEO_FINISHED || videoState.videoEventTx == VIDEO_PAUSED){
             ShowInfo(1);
           }
           else{
@@ -208,24 +216,27 @@ void myLoop(){
     if(xQueueReceive(mainLoopEventQueue, &batteryEventRcvd, 0)){
       //battery info read
       //If our battery voltage is less than BATTERY_LOW_LIMIT then we stop the playback and prompt the user to charge tha battery.
-      if(/*(!batteryEventRcvd.pluggedIn) &&*/ batteryEventRcvd.Binfo.cellVoltage <= BATTERY_LOW){
-        //check if the up time is greater then 30 seconds
-        if(batteryEventRcvd.upTime > 40){
+      if((!batteryEventRcvd.pluggedIn) && batteryEventRcvd.Binfo.cellVoltage <= BATTERY_LOW){
+        //check if the up time is greater than the metric initialization time
+        if(batteryEventRcvd.upTime > BATTERY_METRIC_INIT_TIME){
           //stop the playback if it is playing
-          if(videoState == VIDEO_PLAYING){
+          if(videoState.videoEventTx == VIDEO_PLAYING){
             //send the stop command to the video control task
             buttonData stopCommand;
             stopCommand.Type = BUTTON_PRESSED;
             xQueueOverwrite(eventQueueMain, &stopCommand);
             //wait for the video to stop
-            while(videoState != VIDEO_FINISHED || videoState != VIDEO_PAUSED){
+            while(videoState.videoEventTx != VIDEO_FINISHED && videoState.videoEventTx != VIDEO_PAUSED){
               xQueueReceive(eventQueueMainTx, &videoState, 0);
+              Serial.println("Waiting to confirm video Task Pause state");
+              Serial.printf("Video State: %d\n", videoState.videoEventTx);
               vTaskDelay(100 / portTICK_PERIOD_MS);
             }
           }
+          vTaskDelay(1000 / portTICK_PERIOD_MS);
           //Now display LOW BATTERY MESSAGE
           ShowLowBattery();
-          //countdown till 2 minutes and then disable the battery
+          //countdown and then disable the battery
           for(int i = 0; i < LOW_BATTERY_COUNTDOWN; i++){
             xQueueReceive(mainLoopEventQueue, &batteryEventRcvd, 0);
             vTaskDelay(1000 / portTICK_PERIOD_MS);

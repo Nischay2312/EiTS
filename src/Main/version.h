@@ -13,7 +13,7 @@
 // /////////////////////////////////////////////////////////////////
 #define COMPILE_TIME __TIME__
 #define COMPILE_DATE __DATE__
-#define FIRMWARE_VER "v0.12_pre_release"
+#define FIRMWARE_VER "v0.14_pre_release"
 
 #define APP_NAME "video_player"
 
@@ -25,6 +25,7 @@
 
 
 //Battery Metric
-#define BATTERY_LOW 4.1
-#define LOW_BATTERY_COUNTDOWN 60 //seconds
-#define PLUGGED_IN_THRESHOLD -2.0
+#define BATTERY_LOW 3.4
+#define LOW_BATTERY_COUNTDOWN 120 //seconds
+#define PLUGGED_IN_THRESHOLD -1.0
+#define BATTERY_METRIC_INIT_TIME 40
