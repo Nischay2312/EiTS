@@ -17,6 +17,7 @@
 #include <WebServer.h>
 
 #include <ElegantOTA.h>
+#include "qrcode.h"
 
 #include "ota_page.h"
 
@@ -26,11 +27,35 @@ const char* password = "ESP_OTA_123";
 WebServer server(80);
 
 unsigned long ota_progress_millis = 0;
+int previousClientCount = 0;
 
-volatile bool OTA_DONE = false;
+#define QRCODE_SIZE 3
+
+QRCode qrcode;
+
+//function to generate the QR code
+void displayQRCode(String url) {
+  uint8_t qrcodeData[qrcode_getBufferSize(QRCODE_SIZE)];
+  qrcode_initText(&qrcode, qrcodeData, QRCODE_SIZE, 0, url.c_str());
+  gfx->fillScreen(BLACK);
+
+  // Display the QR code
+  for (uint8_t y = 0; y < qrcode.size; y++) {
+    for (uint8_t x = 0; x < qrcode.size; x++) {
+      if (qrcode_getModule(&qrcode, x, y)) {
+        gfx->fillRect(x*3, y*3, 3, 3, WHITE);
+      }
+    }
+  }
+  gfx->setCursor(0,100);
+  gfx->setTextColor(WHITE);
+  gfx->setTextSize(2);
+  gfx->printf("SCAN ME!!!\n");
+}
 
 void ShowOTAInfo(){
   //print the network name, password and IP address
+    gfx->fillScreen(BLACK);
     gfx->setCursor(0,0);
     gfx->setTextColor(WHITE);
     gfx->setTextSize(1);
@@ -45,6 +70,20 @@ void ShowOTAInfo(){
     Serial.printf("Password: %s\n", password);
     Serial.printf("IP Address: %s\n", WiFi.softAPIP().toString().c_str());
 }
+
+void checkConnectedClients(String url) {
+  int currentClientCount = WiFi.softAPgetStationNum();
+  if (currentClientCount > previousClientCount) {
+    // A client connected
+    // Display the QR code
+    displayQRCode(url);
+  } else if (currentClientCount < previousClientCount) {
+    // A client disconnected
+    ShowOTAInfo();  // Assuming this function displays the connection info
+  }
+  previousClientCount = currentClientCount;
+}
+
 
 void onOTAStart() {
   // Log when OTA has started
@@ -155,9 +194,13 @@ void checkOTA(){
     server.begin();
     Serial.println("HTTP server started");
     gfx->printf("HTTP server started\n");
+
+    //display the QR code
+    String url = "http://" + WiFi.softAPIP().toString() + "/";
     
     while(1){
         server.handleClient();
         ElegantOTA.loop();
+        checkConnectedClients(url);
     }
 }

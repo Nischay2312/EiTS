@@ -36,8 +36,8 @@ const char* OTA_PAGE = R"rawString(
         <li>Navigate to the OTA Loader page. Link Below.</li>
         <li>Make sure to select the OTA MODE as Firmware.</li>
         <li>Select .bin file. <b>NOTE: Once you select the file, the file transmission starts automatically.</b></li>
-        <li>You can select the file again if you made a mistake. The file will be overwritten.</li>
-        <li>Once happy, return back to this page and click the Reboot ESP button.</li>
+        <li>Once file is loaded, the system will reset automatically.</li>
+        <li><b>Don't want to update?</b> Just restart the system by clicking the Reboot ESP button.</li>
     </ol>
     <p><a href="/update">Go to OTA Update</a></p>
     <button onclick="rebootESP()">Reboot ESP</button>

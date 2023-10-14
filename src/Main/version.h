@@ -13,7 +13,7 @@
 // /////////////////////////////////////////////////////////////////
 #define COMPILE_TIME __TIME__
 #define COMPILE_DATE __DATE__
-#define FIRMWARE_VER "v0.14_pre_release"
+#define FIRMWARE_VER "v0.15_pre_release"
 
 #define APP_NAME "video_player"
 

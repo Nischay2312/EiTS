@@ -1,10 +1,11 @@
 TO DO:
-- OTA update
 - when audio only mode, display the file name on screen
 - Design 3d printed Case -- URGENT
 - Low priority, Add CLI to build the Arduino project
 
 DONE
+- Added QR Code to link in OTA																		-- Done (October 13th, 2023)
+- OTA update																				-- Done (October 13th, 2023)
 - Detect battery or plugged in mode.																 	-- Done (October 12th, 2023)
 - Prompt user when low battery																		-- Done (October 12th, 2023)
 - make a visual representation of battery based on the percentage													-- Done (October 12th, 2023)
