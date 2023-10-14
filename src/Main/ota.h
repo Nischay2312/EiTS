@@ -18,12 +18,33 @@
 
 #include <ElegantOTA.h>
 
+#include "ota_page.h"
+
 const char* ssid = "ESP_OTA";
 const char* password = "ESP_OTA_123";
 
 WebServer server(80);
 
 unsigned long ota_progress_millis = 0;
+
+volatile bool OTA_DONE = false;
+
+void ShowOTAInfo(){
+  //print the network name, password and IP address
+    gfx->setCursor(0,0);
+    gfx->setTextColor(WHITE);
+    gfx->setTextSize(1);
+    gfx->printf("Connect to the network for OTA\n");
+    gfx->printf("SSID: %s\n", ssid);
+    gfx->printf("Password: %s\n", password);
+    gfx->printf("Type that on your browser:\n%s\n", WiFi.softAPIP().toString().c_str());
+    
+    //Serial print the info too
+    Serial.printf("Connect to the network for OTA\n");
+    Serial.printf("SSID: %s\n", ssid);
+    Serial.printf("Password: %s\n", password);
+    Serial.printf("IP Address: %s\n", WiFi.softAPIP().toString().c_str());
+}
 
 void onOTAStart() {
   // Log when OTA has started
@@ -43,7 +64,7 @@ void onOTAProgress(size_t current, size_t final) {
     Serial.printf("OTA Progress Current: %u bytes, Final: %u bytes\n", current, final);
     gfx->fillScreen(BLACK);
     gfx->setCursor(0,0);
-    gfx->printf("OTA Progress Current: %u bytes, Final: %u bytes\n", current, final);
+    gfx->printf("OTA Progress:\nCurrent: %u bytes\nFinal: %u bytes\n", current, final);
   }
 }
 
@@ -53,19 +74,15 @@ void onOTAEnd(bool success) {
     Serial.println("OTA update finished successfully!");
     gfx->fillScreen(BLACK);
     gfx->setCursor(0,0);
-    gfx->printf("OTA update finished successfully!\nRestarting in 10 seconds\n");
+    gfx->printf("OTA update finished \nsuccessfully!\n");
   } else {
     Serial.println("There was an error during OTA update!");
     gfx->fillScreen(BLACK);
     gfx->setCursor(0,0);
-    gfx->printf("There was an error during OTA update!\nRestarting in 10 seconds\n");
+    gfx->printf("There was an error \nduring OTA update!\n");
   }
-
-  //Restart the esp in 10 seconds
-  for(int i = 0; i < 10; i++){
-    delay(1000);
-  }
-  esp_restart();
+  delay(1000);
+  ShowOTAInfo();
 }
 
 void checkOTA(){
@@ -76,7 +93,7 @@ void checkOTA(){
 
     //wait for 5 seconds and if the button is pressed, start OTA
     unsigned long timeStart = millis();
-    while(millis() - timeStart < 5000){
+    while(millis() - timeStart < 2000){
         if(digitalRead(BUTTON) == LOW){
             Serial.println("Button Pressed, Starting OTA");
             do_OTA = true;
@@ -99,12 +116,7 @@ void checkOTA(){
       Serial.print(".");
     }
   Serial.println("AP Mode Activated");
-    // while(WiFi.status() != WL_CONNECTED){
-    //     delay(100);
-    //     Serial.print(".");
-    // }
-    // Serial.println("Connected to WiFi");
-    
+
     //Start LCD display
     pinMode(BATEN, OUTPUT);
     digitalWrite(BATEN, HIGH);
@@ -112,29 +124,26 @@ void checkOTA(){
     pinMode(LCDBK, OUTPUT);
     digitalWrite(LCDBK, HIGH);
     delay(100);
+    
+    //disable the speaker
+    pinMode(SPEAKER_EN, OUTPUT);
+    digitalWrite(SPEAKER_EN, LOW);
+
 
     // Init Display
     gfx->begin(80000000);
     gfx->fillScreen(BLACK);
 
-    //prin the network name, password and IP address
-    gfx->setCursor(0,0);
-    gfx->setTextColor(WHITE);
-    gfx->setTextSize(1);
-    gfx->printf("Connect to the network for OTA\n");
-    gfx->printf("SSID: %s\n", ssid);
-    gfx->printf("Password: %s\n", password);
-    gfx->printf("IP Address: %s\n", WiFi.softAPIP().toString().c_str());
-    
-    //Serial print the info too
-    Serial.printf("Connect to the network for OTA\n");
-    Serial.printf("SSID: %s\n", ssid);
-    Serial.printf("Password: %s\n", password);
-    Serial.printf("IP Address: %s\n", WiFi.softAPIP().toString().c_str());
+    ShowOTAInfo();
 
     server.on("/", []() {
-        server.send(200, "text/plain", "Hi! This is ElegantOTA Demo.");
-        gfx->printf("Hi! This is ElegantOTA Demo.\n");
+    server.send(200, "text/html", OTA_PAGE); // Serve the HTML content
+    });
+
+    server.on("/reboot", []() {
+    server.send(200, "text/plain", "Rebooting ESP...");
+    delay(1000);
+    esp_restart();
     });
 
     ElegantOTA.begin(&server);    // Start ElegantOTA

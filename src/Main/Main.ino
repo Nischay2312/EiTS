@@ -57,7 +57,11 @@ void setup() {
   //configure the Battery Enable pin
   pinMode(BATEN, OUTPUT);
   digitalWrite(BATEN, HIGH);
-  delay(1000);
+  
+  delay(100);
+  
+  pinMode(SPEAKER_EN, OUTPUT);
+  delay(500);
 
   WiFi.mode(WIFI_OFF);
   Serial.println("Wifi is off");
@@ -83,6 +87,9 @@ void setup() {
   }
   i2s_zero_dma_buffer(I2S_NUM_0);
 
+  //set speaker en pin to output high
+  digitalWrite(SPEAKER_EN, HIGH);
+  
   //Get the audio gain
   audioGain = getGain();
 

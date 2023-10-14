@@ -59,6 +59,7 @@
   #define I2S_DOUT 5
   #define I2S_SCLK 6
   #define I2S_LRCLK 9
+  #define SPEAKER_EN 12
   
   //SD Card Pinouts
   #define SD_CS 10

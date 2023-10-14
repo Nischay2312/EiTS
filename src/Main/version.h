@@ -23,9 +23,9 @@
 #define MP3_FILENAME "/test.mp3"
 #define MJPEG_FILENAME "/test.mjpeg"
 
-
 //Battery Metric
 #define BATTERY_LOW 3.4
 #define LOW_BATTERY_COUNTDOWN 120 //seconds
 #define PLUGGED_IN_THRESHOLD -1.0
 #define BATTERY_METRIC_INIT_TIME 40
+
