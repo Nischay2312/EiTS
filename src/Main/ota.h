@@ -19,7 +19,7 @@
 #include <ElegantOTA.h>
 
 const char* ssid = "ESP_OTA";
-const char* password = "ESP_OTA";
+const char* password = "ESP_OTA_123";
 
 WebServer server(80);
 
@@ -90,14 +90,25 @@ void checkOTA(){
     //start WiFi
     WiFi.mode(WIFI_AP);
     WiFi.softAP(ssid, password);
+    //delay(1000);
     Serial.println("Connecting to WiFi..");
-    while(WiFi.status() != WL_CONNECTED){
-        delay(100);
-        Serial.print(".");
+    Serial.println("Access Point Enabled");
+    WiFi.softAP(ssid, password);
+    while(WiFi.getMode() != WIFI_AP){
+      delay(100);
+      Serial.print(".");
     }
-    Serial.println("Connected to WiFi");
+  Serial.println("AP Mode Activated");
+    // while(WiFi.status() != WL_CONNECTED){
+    //     delay(100);
+    //     Serial.print(".");
+    // }
+    // Serial.println("Connected to WiFi");
     
     //Start LCD display
+    pinMode(BATEN, OUTPUT);
+    digitalWrite(BATEN, HIGH);
+    delay(100);
     pinMode(LCDBK, OUTPUT);
     digitalWrite(LCDBK, HIGH);
     delay(100);
