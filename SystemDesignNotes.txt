@@ -1,9 +1,12 @@
 TO DO:
+- auto sleep after x minutes of no button press
 - when audio only mode, display the file name on screen
-- Design 3d printed Case -- URGENT
 - Low priority, Add CLI to build the Arduino project
 
 DONE
+- Super Long Press and Previous Media																	-- Done (October 16th, 2023)
+- Loop Function																				-- Done (October 16th, 2023)
+- Design 3d printed Case -- URGENT																 	-- Done (October 15th, 2023)
 - Added QR Code to link in OTA																		-- Done (October 13th, 2023)
 - OTA update																				-- Done (October 13th, 2023)
 - Detect battery or plugged in mode.																 	-- Done (October 12th, 2023)

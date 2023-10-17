@@ -205,17 +205,18 @@ void myLoop(){
           //Send the button event to the video control task
           xQueueOverwrite(eventQueueMain, &receivedData);
           break;
-        case BUTTON_LONG_PRESSED:
-          Serial.println("Long Press received");
+        case BUTTON_SUPER_LONG_PRESSED:
+          Serial.println("Super Long Press received");
           if(videoState.videoEventTx == VIDEO_FINISHED || videoState.videoEventTx == VIDEO_PAUSED){
             ShowInfo(1);
-          }
-          else{
-            Serial.println("Video is not paused so not showing info");
           }
           break;
         case BUTTON_DOUBLE_PRESSED:
           Serial.println("Double Press received");
+          xQueueOverwrite(eventQueueMain, &receivedData);
+          break;
+        case BUTTON_LONG_PRESSED:
+          Serial.println("Long Press received");
           xQueueOverwrite(eventQueueMain, &receivedData);
           break;
         default:

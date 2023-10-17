@@ -13,7 +13,8 @@
 // /////////////////////////////////////////////////////////////////
 
 #define DEBOUNCE_COUNT 20   //number of stable counts for the button input
-#define LONG_PRESS_DURATION 300 // Duration for long press in ms
+#define SUPER_LONG_PRESS_DURATION 1000 // Duration for super long press in ms
+#define LONG_PRESS_DURATION 400 // Duration for long press in ms
 #define DOUBLE_PRESS_TIMEOUT 250 // Timeout for waiting for second press in ms
 #define SINGLE_PRESS_DURATION 20 // Duration for single press in ms
 #define BUTTON_QUEUE_SIZE 1
@@ -21,11 +22,11 @@
 TaskHandle_t _buttonTask;
 static xQueueHandle buttonQueue;
 
-
 typedef enum{
     BUTTON_PRESSED,
     BUTTON_LONG_PRESSED,
     BUTTON_DOUBLE_PRESSED,
+    BUTTON_SUPER_LONG_PRESSED,
     RESTARTME
 } buttonPressType;
 
@@ -100,11 +101,18 @@ static void buttonTask(void *arg){
                 pressDuration++;
             }
 
-            if(pressDuration >= LONG_PRESS_DURATION){
+            if(pressDuration >= SUPER_LONG_PRESS_DURATION){
+                //Serial.printf("Long Press detected\n");
+                data.Type = BUTTON_SUPER_LONG_PRESSED;
+                validPress = true;
+            }
+
+            else if(pressDuration >= LONG_PRESS_DURATION){
                 //Serial.printf("Long Press detected\n");
                 data.Type = BUTTON_LONG_PRESSED;
                 validPress = true;
             }
+
             else if(pressDuration >= SINGLE_PRESS_DURATION){
                 //wait for the second press
                 uint32_t timeWaited = 0;

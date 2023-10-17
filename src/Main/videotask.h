@@ -17,6 +17,9 @@ static int next_frame = 0;
 static int skipped_frames = 0;
 static unsigned long start_ms, curr_ms, next_frame_ms;
 static unsigned int video_idx = 1;
+static unsigned int video_idx_max = 1;
+static unsigned int video_idx_min = 1;
+static bool videoLoop = false;
 uint32_t pauseStartTime;
 uint32_t pauseDuration;
 
@@ -74,6 +77,68 @@ File aFile;
 #include "decodetask.h"
 void playVideo();
 File vFile;
+
+
+//function to search the max and min name of the directory
+void findMinMaxDir(unsigned int &minDir, unsigned int &maxDir) {
+  File root = SD.open(VIDEO_MAX_MIN_SEARCH_PATH);
+  minDir = 1;
+  maxDir = 1;
+
+  if (root) {
+    while (true) {
+      File entry =  root.openNextFile();
+      if (!entry) {
+        // no more files or directories
+        break;
+      }
+      
+      if (entry.isDirectory()) {
+        String dirName = entry.name();
+        int dirNumber = dirName.toInt();
+
+        if (dirNumber < minDir) {
+          minDir = dirNumber;
+        }
+        
+        if (dirNumber > maxDir) {
+          maxDir = dirNumber;
+        }
+      }
+      entry.close();
+    }
+    root.close();
+  } else {
+    Serial.println("Failed to open SEARCH_DIR");
+  }
+}
+
+//function to read loop state from SD card
+bool readLoopState() {
+  File myFile;
+
+  // Open the file for reading
+  myFile = SD.open(LOOP_FILE_PATH, FILE_READ);
+  if (!myFile) {
+    Serial.println("Failed to open loop.txt");
+    return false; // Return false if file can't be opened
+  }
+
+  // Read the content of the file into a String variable
+  String content = "";
+  while (myFile.available()) {
+    content += char(myFile.read());
+  }
+  myFile.close();
+
+  // Check if the content matches the desired values
+  content.trim();  // Remove any white space or newline characters
+  if (content == "true" || content == "TRUE" || content == "1") {
+    return true;
+  } else {
+    return false;
+  }
+}
 
 // pixel drawing callback
 static int drawMCU(JPEGDRAW *pDraw) {
@@ -517,6 +582,17 @@ static void videoControlTask( void *arg){
     buttonData event;
     video_idx = 1;
 
+    //read loop state from SD card
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    videoLoop = readLoopState();
+    Serial.printf("Loop State: %d\n", videoLoop);
+
+    //find the max and min directory
+    findMinMaxDir(video_idx_min, video_idx_max);
+    video_idx_min = 1;
+    Serial.printf("Min Dir: %d\n", video_idx_min);
+    Serial.printf("Max Dir: %d\n", video_idx_max);
+
     uint8_t videoplayerEvent = 0;
 
     bool isPlaying = false;
@@ -614,6 +690,10 @@ static void videoControlTask( void *arg){
                   isPlaying = true;
                   //play the next video
                   video_idx++;
+                  //check if the video index is greater than the max directory
+                  if(video_idx > video_idx_max){
+                      video_idx = video_idx_min;
+                  }
                   Serial.println("Trying to switch to next video");
                   int ret = startVideoPlayerTask(AUDIOASSIGNCORE, video_idx);
                   if(ret == 2){
@@ -643,6 +723,58 @@ static void videoControlTask( void *arg){
                   //vTaskDelay(50 / portTICK_PERIOD_MS);
                 }
             }
+            else if(event.Type == BUTTON_LONG_PRESSED){
+              Serial.println("Video control task received a long press");
+              //go back one counter.
+              if(videoPaused || !isPlaying){ //dont do anything+ unless video is paused. or stopped
+                  if(!videoPaused && isPlaying){
+                    //the video
+                    videoPaused = true;
+                    isPlaying = true;
+                    pausePlayback();
+                  }
+                  //stop the video if playing
+                  if(isPlaying && videoPaused){
+                      Serial.println("Stopping playback to restart");
+                      isPlaying = false;
+                      videoPaused = false;
+                      stopPlayback();
+                  }
+                  isPlaying = true;
+                  //play the next video
+                  video_idx--;
+                  //check if the video index is less than the min directory
+                  if(video_idx < video_idx_min){
+                      video_idx = video_idx_max;
+                  }
+                  Serial.println("Trying to switch to next video");
+                  int ret = startVideoPlayerTask(AUDIOASSIGNCORE, video_idx);
+                  if(ret == 2){
+                      //video file not found, reset the video index
+                      video_idx = 1;
+                      int ret2 =  startVideoPlayerTask(AUDIOASSIGNCORE, video_idx);
+                      if(ret2 == 2){
+                          Serial.println("Video Player File Not found.");
+                          Serial.println("No video File found. Make sure you have the correct video files in the SD card");
+                        //break;
+                      }
+                      if(ret2 == 0){
+                          Serial.println("Video Player Task Failed");
+                          //break;
+                          esp_restart();
+                      }
+                  }
+                  if(ret == 0){
+                      Serial.println("Video Player Task Failed");
+                      //break;
+                      esp_restart();
+                  }
+                  Serial.println("switch successful");
+                  videoEvent.videoEventTx = VIDEO_PLAYING;
+                  xQueueOverwrite(eventQueueMainTx, &videoEvent);
+                  Serial.println("Playback Start Sucessful");
+              }
+            }
         }
         
         // wait for the video event
@@ -656,6 +788,12 @@ static void videoControlTask( void *arg){
                     videoPaused = false;
                     videoEvent.videoEventTx = VIDEO_FINISHED;
                     xQueueOverwrite(eventQueueMainTx, &videoEvent);
+                    if(videoLoop){
+                      Serial.println("Looping Media");
+                      // send a button pressed notification to the evenQueueMain queue to restart the video
+                      event.Type = BUTTON_PRESSED;
+                      xQueueOverwrite(eventQueueMain, &event);
+                    }
                     break;
                 default:
                     Serial.println("Unrecognized Video Event");
