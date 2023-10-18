@@ -1,4 +1,28 @@
 ----------------------------------------------------
+v0.17_pre_release : October 16th, 2023
+------------------------------------------
+- Firmware Changes:
+-- Added Inctivity Sleep Feature. System shuts down after X mins of no button press
+-- Changed SD card SPI frequency to 40 MHz from 80 MHz
+----------------------------------------------------
+.
+.
+.
+----------------------------------------------------
+v0.16_pre_release : October 16th, 2023
+------------------------------------------
+- Firmware Changes:
+-- Added SUPER LONG BUTTON Press gesture
+-- Added Loop Function in the player. Set True or False in the SD card
+- Design Changes:
+-- Designed the Case, need to be printed and checked.
+- Hardware Changes:
+-- Added 3.7V to 5V Boost Converter to the output of the Load Switch. Added 47Ohm resistor to LCD backlight Pin.
+----------------------------------------------------
+.
+.
+.
+----------------------------------------------------
 v0.15_pre_release : October 14th, 2023
 ------------------------------------------
 - Firmware Changes:

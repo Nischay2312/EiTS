@@ -97,7 +97,7 @@ void setup() {
 
   SPIClass spi = SPIClass(HSPI);
   spi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
-  if (!SD.begin(SD_CS, spi, 80000000)) {
+  if (!SD.begin(SD_CS, spi, 40000000)) {
     Serial.println("ERROR: File system mount failed!");
     gfx->println("ERROR: File system mount failed!");
     Serial.println("Restarting");
@@ -187,16 +187,19 @@ void myLoop(){
   }
 
   //initialize the video control event queue
-    buttonData receivedData;
-    intializeButtonEventQueue();
-    videoState.videoEventTx = VIDEO_FINISHED;
-    videoState.vidIdx = 0;
+  buttonData receivedData;
+  intializeButtonEventQueue();
+  videoState.videoEventTx = VIDEO_FINISHED;
+  videoState.vidIdx = 0;
 
+  unsigned long time_last_button_input = 0;
+  
   gfx->println("System Ready\nWaiting For User Input\nSingle Press: Start/Pause\nDouble Press: Skip");
   while(1){
 
     //read data from the button queue
     if(xQueueReceive(buttonQueue, &receivedData, 0)){
+      time_last_button_input = millis();
       Serial.println("----------------");
       //print the guesture:
       switch(receivedData.Type){
@@ -272,6 +275,9 @@ void myLoop(){
       //xQueueOverwrite(eventQueueMainTx, &videoState);
     }
 
+    if((millis() - time_last_button_input) > SLEEP_TIME * 1000){
+      putEspToSleep();
+    }
     vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 
