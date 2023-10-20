@@ -130,9 +130,9 @@ void checkOTA(){
     delay(250);
     bool do_OTA = false;
 
-    //wait for 5 seconds and if the button is pressed, start OTA
+    //wait if the button is pressed, start OTA
     unsigned long timeStart = millis();
-    while(millis() - timeStart < 2000){
+    while(millis() - timeStart < 200){
         if(digitalRead(BUTTON) == LOW){
             Serial.println("Button Pressed, Starting OTA");
             do_OTA = true;

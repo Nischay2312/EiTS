@@ -13,7 +13,7 @@
 // /////////////////////////////////////////////////////////////////
 #define COMPILE_TIME __TIME__
 #define COMPILE_DATE __DATE__
-#define FIRMWARE_VER "v0.17_pre_release"
+#define FIRMWARE_VER "v0.18_pre_release"
 
 #define APP_NAME "video_player"
 
@@ -24,6 +24,7 @@
 #define AAC_FILENAME "/test.aac"
 #define MP3_FILENAME "/test.mp3"
 #define MJPEG_FILENAME "/test.mjpeg"
+#define SPLASH_SCREEN_FILE "/Config/SplashScreen.jpeg"
 
 //Battery Metric
 #define BATTERY_LOW 3.4

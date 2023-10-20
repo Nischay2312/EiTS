@@ -43,6 +43,9 @@
 /* For OTA */
 #include "ota.h"
 
+/* For JPEG Render*/
+#include "displayJPEG.h"
+
 //intialize the batteryEvent_t memeber
 batteryEvent_t batteryEventRcvd;
 videoEvent_t videoState;
@@ -75,6 +78,19 @@ void setup() {
   gfx->begin(80000000);
   gfx->fillScreen(BLACK);
 
+  Serial.println("Init FS");
+  SPIClass spi = SPIClass(HSPI);
+  spi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
+  if (!SD.begin(SD_CS, spi, 40000000)) {
+    Serial.println("ERROR: File system mount failed!");
+    gfx->println("ERROR: File system mount failed!");
+    Serial.println("Restarting");
+    esp_restart();
+    return;
+  }
+
+  //display the spalsh screen
+  DrawSplashScreen();
   Serial.println("Init I2S");
 
   esp_err_t ret_val = i2s_init(I2S_NUM_0, 44100, I2S_MCLK, I2S_SCLK, I2S_LRCLK, I2S_DOUT, I2S_DIN);
@@ -92,18 +108,6 @@ void setup() {
   
   //Get the audio gain
   audioGain = getGain();
-
-  Serial.println("Init FS");
-
-  SPIClass spi = SPIClass(HSPI);
-  spi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
-  if (!SD.begin(SD_CS, spi, 40000000)) {
-    Serial.println("ERROR: File system mount failed!");
-    gfx->println("ERROR: File system mount failed!");
-    Serial.println("Restarting");
-    esp_restart();
-    return;
-  }
 
   //retrieve the last battery info
   initPreferences(&batteryEventRcvd.Binfo, sizeof(batteryEventRcvd.Binfo));
@@ -149,7 +153,7 @@ void ShowInfo(bool both){
       
 
       //call the draw battery icon function
-      drawBatteryIcon(111, 84, batteryEventRcvd.Binfo.cellPercentage, batteryEventRcvd.pluggedIn);
+      drawBatteryIcon(111, 79, batteryEventRcvd.Binfo.cellPercentage, batteryEventRcvd.pluggedIn);
   }
 
   //update the last battery info into the flash
@@ -194,6 +198,7 @@ void myLoop(){
 
   unsigned long time_last_button_input = 0;
   
+  gfx->fillScreen(BLACK);
   gfx->println("System Ready\nWaiting For User Input\nSingle Press: Start/Pause\nDouble Press: Skip");
   while(1){
 

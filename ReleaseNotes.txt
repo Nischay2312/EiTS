@@ -1,4 +1,17 @@
 ----------------------------------------------------
+v0.18_pre_release : October 20th, 2023
+------------------------------------------
+- Firmware Changes:
+-- Added Splash Screen on Start up
+-- Reduced OTA Check Time
+-- Added Image for instructions
+- Design Changes
+-- Updated the case designs a bit
+----------------------------------------------------
+.
+.
+.
+----------------------------------------------------
 v0.17_pre_release : October 16th, 2023
 ------------------------------------------
 - Firmware Changes:
