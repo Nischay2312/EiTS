@@ -25,6 +25,7 @@
 #define MP3_FILENAME "/test.mp3"
 #define MJPEG_FILENAME "/test.mjpeg"
 #define SPLASH_SCREEN_FILE "/Config/SplashScreen.jpeg"
+#define MENU_INSTRUCTIONS_FILE "/Config/MenuInstructions.jpeg"
 
 //Battery Metric
 #define BATTERY_LOW 3.4

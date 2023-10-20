@@ -79,6 +79,7 @@ void setup() {
   gfx->fillScreen(BLACK);
 
   Serial.println("Init FS");
+
   SPIClass spi = SPIClass(HSPI);
   spi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
   if (!SD.begin(SD_CS, spi, 40000000)) {
@@ -89,7 +90,7 @@ void setup() {
     return;
   }
 
-  //display the spalsh screen
+  //display the splash screen
   DrawSplashScreen();
   Serial.println("Init I2S");
 
@@ -108,6 +109,7 @@ void setup() {
   
   //Get the audio gain
   audioGain = getGain();
+
 
   //retrieve the last battery info
   initPreferences(&batteryEventRcvd.Binfo, sizeof(batteryEventRcvd.Binfo));
@@ -198,8 +200,15 @@ void myLoop(){
 
   unsigned long time_last_button_input = 0;
   
+  //display menu instructions
   gfx->fillScreen(BLACK);
-  gfx->println("System Ready\nWaiting For User Input\nSingle Press: Start/Pause\nDouble Press: Skip");
+  if(SD.exists(MENU_INSTRUCTIONS_FILE)){
+    jpegDraw(MENU_INSTRUCTIONS_FILE, jpegDrawCallback, true, 0, 0, gfx->width(), gfx->height());
+  }
+  else{
+    gfx->println("System Ready\nWaiting For User Input\nSingle Press: Start/Pause\nDouble Press: Next\nLong Press: Prev\nYou need to pause before changing.");
+  }
+
   while(1){
 
     //read data from the button queue
