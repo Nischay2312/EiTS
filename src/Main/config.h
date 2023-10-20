@@ -59,7 +59,7 @@
   #define I2S_DOUT 5
   #define I2S_SCLK 6
   #define I2S_LRCLK 9
-  #define SPEAKER_EN 12
+  #define SPEAKER_EN 8
   
   //SD Card Pinouts
   #define SD_CS 10
@@ -69,6 +69,6 @@
 
   //Button Pinouts
   #define BUTTON 37
-  #define LCDBK 8
+  #define LCDBK -1
   #define BATEN 36
 #endif
