@@ -469,7 +469,9 @@ bool playVideoWithAudio(int channel) {
     noAudio = true;
     //return false;
   }
-
+  else{
+    Serial.printf("Audio file opened: %s \n", aFilePath);
+  }
   char vFilePath[40];
   sprintf(vFilePath, "%s%d%s", BASE_PATH, channel, MJPEG_FILENAME);
 
@@ -480,7 +482,10 @@ bool playVideoWithAudio(int channel) {
     noVideo = true;
     //return false;
   }
-  
+  else{
+    Serial.printf("Video file opened: %s \n", aFilePath);
+  }
+
   if(!noVideo){
     Serial.println("Init video");
     mjpeg_setup(&vFile, MJPEG_BUFFER_SIZE, drawMCU, false, DECODEASSIGNCORE, DRAWASSIGNCORE);
@@ -558,7 +563,7 @@ int startVideoPlayerTask(BaseType_t assignedCore, unsigned int index){
     BaseType_t ret = xTaskCreatePinnedToCore(
       (TaskFunction_t)videoPlayerTask,
       (const char *const)"Video Player Task",
-      (const uint32_t)10000,
+      (const uint32_t)20000,
       (void *const)index,
       (UBaseType_t)configMAX_PRIORITIES - 3,
       (TaskHandle_t *const)_videoPlayerTask,
@@ -644,10 +649,12 @@ static void videoControlTask( void *arg){
 
                     //start the task that plays the video
                     int ret = startVideoPlayerTask(AUDIOASSIGNCORE, video_idx);
+                    vTaskDelay(50 / portTICK_PERIOD_MS);
                     if(ret == 2){
                         //video file not found, reset the video index
                         video_idx = 1; //reset it
                         int ret2 =  startVideoPlayerTask(AUDIOASSIGNCORE, video_idx);
+                        vTaskDelay(50 / portTICK_PERIOD_MS);
                         if(ret2 == 2){ //file not found again
                             Serial.println("Video Player File Not found.");
                             Serial.println("No video File found. Make sure you have the correct video files in the SD card");
@@ -696,10 +703,12 @@ static void videoControlTask( void *arg){
                   }
                   Serial.println("Trying to switch to next video");
                   int ret = startVideoPlayerTask(AUDIOASSIGNCORE, video_idx);
+                  vTaskDelay(50 / portTICK_PERIOD_MS);
                   if(ret == 2){
                       //video file not found, reset the video index
                       video_idx = 1;
                       int ret2 =  startVideoPlayerTask(AUDIOASSIGNCORE, video_idx);
+                      vTaskDelay(50 / portTICK_PERIOD_MS);
                       if(ret2 == 2){
                           Serial.println("Video Player File Not found.");
                           Serial.println("No video File found. Make sure you have the correct video files in the SD card");
@@ -749,10 +758,12 @@ static void videoControlTask( void *arg){
                   }
                   Serial.println("Trying to switch to next video");
                   int ret = startVideoPlayerTask(AUDIOASSIGNCORE, video_idx);
+                  vTaskDelay(50 / portTICK_PERIOD_MS);
                   if(ret == 2){
                       //video file not found, reset the video index
                       video_idx = 1;
                       int ret2 =  startVideoPlayerTask(AUDIOASSIGNCORE, video_idx);
+                      vTaskDelay(50 / portTICK_PERIOD_MS);
                       if(ret2 == 2){
                           Serial.println("Video Player File Not found.");
                           Serial.println("No video File found. Make sure you have the correct video files in the SD card");
