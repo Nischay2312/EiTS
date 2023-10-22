@@ -99,7 +99,7 @@ class VideoConverterApp:
                         self.console.insert(tk.END, line)
                         self.console.see(tk.END)  # Auto-scrolling
                     
-                    process = subprocess.Popen(['ffmpeg', '-i', input_file, '-y', '-vf', 'fps=24,scale=160:128:flags=lanczos', '-q:v', '6', output_video], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+                    process = subprocess.Popen(['ffmpeg', '-i', input_file, '-y', '-vf', 'fps=24,scale=160:128:flags=lanczos', '-q:v', '10', output_video], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
                     for line in process.stdout:
                         self.console.insert(tk.END, line)
                         self.console.see(tk.END)  # Auto-scrolling
