@@ -23,9 +23,6 @@ static bool videoLoop = false;
 uint32_t pauseStartTime;
 uint32_t pauseDuration;
 
-bool qu1_use = false;
-bool qu2_use = false;
-
 //Queue to get info from the main task
 static xQueueHandle eventQueueMain;
 //Queue to send info to the main task
@@ -251,15 +248,6 @@ void closeVideoPlayer(){
   skipped_frames = 0;
   pauseStartTime = 0;
   pauseDuration = 0;
-
-  if(qu1_use){
-    vQueueDelete(_pDecodeTask.xqh);
-    qu1_use = false;
-  }
-  if(qu2_use){
-    vQueueDelete(_pDrawTask.xqh);
-    qu2_use = false;
-  }
   
   Serial.println("Closing the video file");
   //close the file
@@ -289,7 +277,7 @@ void closeAudioPlayer(){
   xQueueOverwrite(mp3QueueEvent, &notif);
   //wait for the notification from the audio player task
   while(1){
-    if((xQueueReceive(mp3QueueTransmitt, &notif, pdMS_TO_TICKS(5)))){
+    if((xQueueReceive(mp3QueueTransmitt, &notif, portMAX_DELAY))){
       Serial.println("mp3queue from mp3 task Received: ");
       Serial.println(notif);
       if(notif == MP3_STOP){
@@ -351,7 +339,7 @@ void pausePlayback(){
       vTaskDelay(20 / portTICK_PERIOD_MS);
       //wait for the notification from the audio player task
       while(1){
-        if((xQueueReceive(mp3QueueTransmitt, &notif, pdMS_TO_TICKS(5)))){
+        if((xQueueReceive(mp3QueueTransmitt, &notif, portMAX_DELAY))){
           Serial.println("Pause Task Received: mp3queue from mp3 task Received: ");
           Serial.println(notif);
           if(notif == MP3_PAUSE){

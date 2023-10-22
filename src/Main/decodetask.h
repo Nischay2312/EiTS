@@ -111,7 +111,6 @@ static void decode_task(void *arg)
     total_decode_video_ms += millis() - s;
   }
   vQueueDelete(p->xqh);
-  qu1_use = false;
   log_i("decode_task end.");
   Serial.println("Decode task End");
   vTaskDelete(NULL);
@@ -129,7 +128,6 @@ static void draw_task(void *arg)
     // log_i("draw_task work end.");
   }
   vQueueDelete(p->xqh);
-  qu2_use = false;
   log_i("draw_task end.");
   Serial.println("draw task End");
   vTaskDelete(NULL);
@@ -167,16 +165,14 @@ bool mjpeg_setup(Stream *input, int32_t mjpegBufSize, JPEG_DRAW_CALLBACK *pfnDra
 
   _xqh = xQueueCreate(NUMBER_OF_DRAW_BUFFER, sizeof(JPEGDRAW));
   _pDrawTask.xqh = _xqh;
-  qu2_use = true;
   _pDrawTask.drawFunc = pfnDraw;
   _pDecodeTask.xqh = xQueueCreate(NUMBER_OF_DECODE_BUFFER, sizeof(mjpegBuf));
-  qu1_use = true;
   _pDecodeTask.drawFunc = queueDrawMCU;
 
   xTaskCreatePinnedToCore(
       (TaskFunction_t)decode_task,
       (const char *const)"MJPEG decode Task",
-      (const uint32_t)10000,
+      (const uint32_t)2000,
       (void *const)&_pDecodeTask,
       (UBaseType_t)configMAX_PRIORITIES - 2,
       (TaskHandle_t *const)&_decodeTask,
@@ -184,7 +180,7 @@ bool mjpeg_setup(Stream *input, int32_t mjpegBufSize, JPEG_DRAW_CALLBACK *pfnDra
   xTaskCreatePinnedToCore(
       (TaskFunction_t)draw_task,
       (const char *const)"MJPEG Draw Task",
-      (const uint32_t)10000,
+      (const uint32_t)2000,
       (void *const)&_pDrawTask,
       (UBaseType_t)configMAX_PRIORITIES - 3,
       (TaskHandle_t *const)&_draw_task,
