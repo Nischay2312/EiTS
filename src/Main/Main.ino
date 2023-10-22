@@ -75,14 +75,14 @@ void setup() {
   delay(100);
 
   // Init Display
-  gfx->begin(80000000);
+  gfx->begin(40000000);
   gfx->fillScreen(BLACK);
 
   Serial.println("Init FS");
 
   SPIClass spi = SPIClass(HSPI);
   spi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
-  if (!SD.begin(SD_CS, spi, 40000000)) {
+  if (!SD.begin(SD_CS, spi, 16000000)) {
     Serial.println("ERROR: File system mount failed!");
     gfx->println("ERROR: File system mount failed!");
     Serial.println("Restarting");

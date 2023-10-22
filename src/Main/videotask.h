@@ -276,8 +276,10 @@ void closeAudioPlayer(){
   notif = MP3_STOP_C;
   xQueueOverwrite(mp3QueueEvent, &notif);
   //wait for the notification from the audio player task
+  int i = 0;
   while(1){
-    if((xQueueReceive(mp3QueueTransmitt, &notif, portMAX_DELAY))){
+    i++;
+    if((xQueueReceive(mp3QueueTransmitt, &notif, pdMS_TO_TICKS(5)))){
       Serial.println("mp3queue from mp3 task Received: ");
       Serial.println(notif);
       if(notif == MP3_STOP){
@@ -291,6 +293,10 @@ void closeAudioPlayer(){
     }
     Serial.println("Waiting to hear back from the AudioTask if PAUSED");
     vTaskDelay(100 / portTICK_PERIOD_MS);
+    if(i > 40){
+      Serial.println("Audio player task did not respond. Force closing the task");
+      break;
+    }
   }
   //close the file
   Serial.println("closing audio file");
@@ -338,8 +344,10 @@ void pausePlayback(){
       //give a delay to make sure the audio player task has paused the playback
       vTaskDelay(20 / portTICK_PERIOD_MS);
       //wait for the notification from the audio player task
+      int i = 0;
       while(1){
-        if((xQueueReceive(mp3QueueTransmitt, &notif, portMAX_DELAY))){
+        i++;
+        if((xQueueReceive(mp3QueueTransmitt, &notif, pdMS_TO_TICKS(5)))){
           Serial.println("Pause Task Received: mp3queue from mp3 task Received: ");
           Serial.println(notif);
           if(notif == MP3_PAUSE){
@@ -353,6 +361,10 @@ void pausePlayback(){
         }
         Serial.println("Waiting to hear back from the AudioTask if PAUSED");
         vTaskDelay(100 / portTICK_PERIOD_MS);
+        if(i > 40){
+          Serial.println("Audio player task did not respond. Force closing the task");
+          break;
+        }
       }
     }
 }
@@ -381,8 +393,10 @@ void resumePlayback(){
           //give a delay to make sure the audio player task has resumed the playback
           vTaskDelay(20 / portTICK_PERIOD_MS);
           //wait for the notification from the audio player task
+          int i = 0;
           while(1){
-            if((xQueueReceive(mp3QueueTransmitt, &notif, portMAX_DELAY))){
+            i++;
+            if((xQueueReceive(mp3QueueTransmitt, &notif, pdMS_TO_TICKS(5)))){
               Serial.println("Resume Task: mp3queue from mp3 task Received: ");
               Serial.println(notif);
               if(notif == MP3_RESUME){
@@ -395,8 +409,12 @@ void resumePlayback(){
               }
             }
           vTaskDelay(100 / portTICK_PERIOD_MS);
+          if(i > 40){
+            Serial.println("Audio player task did not respond. Force resuming the task");
+            break;
           }
         }
+      }
 }
 
 // function to control the video playback
