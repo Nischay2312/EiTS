@@ -10,7 +10,7 @@
 // /////////////////////////////////////////////////////////////////
 
 #define FPS 24
-#define MJPEG_BUFFER_SIZE (128 * 160 * 2 / 8)
+#define MJPEG_BUFFER_SIZE (128 * 160 * 2 / 4)
 #define AUDIOASSIGNCORE 1
 #define DECODEASSIGNCORE 0
 #define DRAWASSIGNCORE 1
