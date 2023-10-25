@@ -140,6 +140,33 @@ bool readLoopState() {
   }
 }
 
+//function to read auto play state from SD card
+bool readAutoPlayState() {
+  File myFile;
+
+  // Open the file for reading
+  myFile = SD.open(AUTOPLAY_FILE_PATH, FILE_READ);
+  if (!myFile) {
+    Serial.println("Failed to open AutoPlay.txt");
+    return false; // Return false if file can't be opened
+  }
+
+  // Read the content of the file into a String variable
+  String content = "";
+  while (myFile.available()) {
+    content += char(myFile.read());
+  }
+  myFile.close();
+
+  // Check if the content matches the desired values
+  content.trim();  // Remove any white space or newline characters
+  if (content == "true" || content == "TRUE" || content == "1") {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 // pixel drawing callback
 static int drawMCU(JPEGDRAW *pDraw) {
   unsigned long s = millis();
@@ -611,6 +638,9 @@ static void videoControlTask( void *arg){
     Serial.printf("Min Dir: %d\n", video_idx_min);
     Serial.printf("Max Dir: %d\n", video_idx_max);
 
+    bool autoplay = false;
+    autoplay = readAutoPlayState();
+
     uint8_t videoplayerEvent = 0;
 
     bool isPlaying = false;
@@ -806,7 +836,14 @@ static void videoControlTask( void *arg){
                     videoPaused = false;
                     videoEvent.videoEventTx = VIDEO_FINISHED;
                     xQueueOverwrite(eventQueueMainTx, &videoEvent);
-                    if(videoLoop){
+                    //check if autoplay is enabled
+                    if(autoplay){
+                      Serial.println("Autoplay is enabled, going to next video");
+                      // send a button double press notification to the evenQueueMain queue to restart the video
+                      event.Type = BUTTON_DOUBLE_PRESSED;
+                      xQueueOverwrite(eventQueueMain, &event);
+                    }
+                    else if(videoLoop){
                       Serial.println("Looping Media");
                       // send a button pressed notification to the evenQueueMain queue to restart the video
                       event.Type = BUTTON_PRESSED;

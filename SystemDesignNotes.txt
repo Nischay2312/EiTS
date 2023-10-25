@@ -3,8 +3,8 @@ TO DO:
 - Low priority, Add CLI to build the Arduino project
 
 DONE
-- auto sleep after x minutes of no button press		-- Done (October 17th, 2023)
-
+- add a function to go to next video automatically															-- Done (October 24th, 2023)
+- auto sleep after x minutes of no button press																-- Done (October 17th, 2023)
 - Super Long Press and Previous Media																	-- Done (October 16th, 2023)
 - Loop Function																				-- Done (October 16th, 2023)
 - Design 3d printed Case -- URGENT																 	-- Done (October 15th, 2023)

@@ -1,4 +1,15 @@
 ----------------------------------------------------
+v0.19_pre_release : October 24th, 2023
+------------------------------------------
+- Firmware Changes:
+-- Updated Instruction Image for better readiblity
+-- Increased the Jpeg Buffer Size
+-- Added auto play function to go to next video. Ovverides Loop!!
+----------------------------------------------------
+.
+.
+.
+----------------------------------------------------
 v0.18_pre_release : October 20th, 2023
 ------------------------------------------
 - Firmware Changes:

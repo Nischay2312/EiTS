@@ -13,12 +13,13 @@
 // /////////////////////////////////////////////////////////////////
 #define COMPILE_TIME __TIME__
 #define COMPILE_DATE __DATE__
-#define FIRMWARE_VER "v0.18_pre_release"
+#define FIRMWARE_VER "v0.19_pre_release"
 
 #define APP_NAME "video_player"
 
 #define AUDIO_GAIN_FILE_PATH "/Config/AudioGain.txt"
 #define LOOP_FILE_PATH "/Config/Loop.txt"
+#define AUTOPLAY_FILE_PATH "/Config/AutoPlay.txt"
 #define BASE_PATH "/Videos/"
 #define VIDEO_MAX_MIN_SEARCH_PATH "/Videos"
 #define AAC_FILENAME "/test.aac"
