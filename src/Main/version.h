@@ -13,7 +13,7 @@
 // /////////////////////////////////////////////////////////////////
 #define COMPILE_TIME __TIME__
 #define COMPILE_DATE __DATE__
-#define FIRMWARE_VER "v0.20_pre_release"
+#define FIRMWARE_VER "v1.0_release"
 
 #define APP_NAME "video_player"
 
@@ -22,9 +22,9 @@
 #define AUTOPLAY_FILE_PATH "/Config/AutoPlay.txt"
 #define BASE_PATH "/Videos/"
 #define VIDEO_MAX_MIN_SEARCH_PATH "/Videos"
-#define AAC_FILENAME "/test.aac"
-#define MP3_FILENAME "/test.mp3"
-#define MJPEG_FILENAME "/test.mjpeg"
+#define AAC_FILENAME "/media.aac"
+#define MP3_FILENAME "/media.mp3"
+#define MJPEG_FILENAME "/media.mjpeg"
 #define SPLASH_SCREEN_FILE "/Config/SplashScreen.jpeg"
 #define MENU_INSTRUCTIONS_FILE "/Config/MenuInstructions.jpeg"
 
