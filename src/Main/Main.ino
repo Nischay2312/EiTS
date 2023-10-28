@@ -76,6 +76,7 @@ void setup() {
 
   // Init Display
   gfx->begin(40000000);
+  gfx->setRotation(3);
   gfx->fillScreen(BLACK);
 
   Serial.println("Init FS");
